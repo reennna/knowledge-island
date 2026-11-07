@@ -1450,7 +1450,7 @@ window.PETS_ART = (function () {
 
   /* ===================== 퀘스트·NPC ===================== */
   const SKIN = ['#ffe2c6', '#f7cfa6', '#e3ad84', '#b97f57'];
-  const HAIR = ['#2b2420', '#5b3a24', '#a0632d', '#d9b26f', '#7b8794', '#e4e4e4'];
+  const HAIR = ['#2b2420', '#5b3a24', '#a0632d', '#d9b26f', '#7b8794', '#e4e4e4', '#f58fb8', '#6cc4f0', '#a184e8'];
   const SHIRT = ['#ff6b4a', '#ffc23d', '#18a88f', '#2f8fd0', '#8e6cf0', '#f278b4', '#ffffff', '#3b4a6b'];
   const PANTS = ['#3b4a6b', '#6b4f3a', '#2b2b33', '#5d8bd6'];
   const L = (skin, hair, style, shirt, pants, hat, extra) => Object.assign({ skin, hair, style, shirt, pants, hat }, extra || {});
@@ -2092,11 +2092,14 @@ window.PETS_ART = (function () {
   function drawChar(g, x, y, lk, dir, t, moving, sc) {
     sc = sc || 1;
     const sw = moving ? Math.sin(t * 11) : 0, bob = moving ? Math.abs(sw) * 1.6 : Math.sin(t * 2.2) * 0.5;
+    const hs = moving ? sw : Math.sin((t || 0) * 2.2) * 0.25; // 머리카락 흔들림
     g.save(); g.translate(x, y); if (sc !== 1) g.scale(sc, sc);
     ell(g, 0, 0, 10, 3.6); g.fillStyle = 'rgba(28,40,64,.22)'; g.fill();
     rr(g, -6, -10 + (sw > 0 ? -sw * 2 : 0), 5, 10, 2); paint(g, lk.pants, OUT, 1.2);
     rr(g, 1, -10 + (sw < 0 ? sw * 2 : 0), 5, 10, 2); paint(g, lk.pants, OUT, 1.2);
     g.translate(0, -bob);
+    const hy = -31;
+    if (dir !== 'up') hairBack(g, lk, dir, hy, hs, moving);
     const body = lk.labcoat ? '#ffffff' : lk.shirt;
     rr(g, -10.5, -22 + sw * 1.5, 4.5, 10, 2.2); paint(g, body, OUT, 1.2);
     rr(g, 6, -22 - sw * 1.5, 4.5, 10, 2.2); paint(g, body, OUT, 1.2);
@@ -2106,10 +2109,8 @@ window.PETS_ART = (function () {
     if (lk.apron && dir !== 'up') { rr(g, -6, -18, 12, 10, 2); paint(g, lk.apron, OUT, 1); }
     if (lk.tie && dir !== 'up') { g.beginPath(); g.moveTo(0, -22); g.lineTo(-2.4, -18); g.lineTo(0, -12.5); g.lineTo(2.4, -18); g.closePath(); paint(g, lk.tie, OUT, 0.8); }
     if (lk.bundle) { const bx = dir === 'left' ? -11 : 11; rr(g, bx - 5, -17, 10, 9, 3); paint(g, '#5d8bd6', OUT, 1); g.beginPath(); g.moveTo(bx - 2, -17); g.lineTo(bx, -20); g.lineTo(bx + 2, -17); g.strokeStyle = OUT; g.lineWidth = 1; g.stroke(); }
-    const hy = -31;
-    if (lk.style === 'long' && dir !== 'up') { rr(g, -10.5, hy - 2, 21, 15, 6); paint(g, lk.hair, OUT, 1.2); }
     circ(g, 0, hy, 10); paint(g, lk.skin, OUT, 1.4);
-    drawHair(g, lk, dir, hy);
+    hairFront(g, lk, dir, hy, hs, moving);
     if (dir !== 'up') {
       const ex = dir === 'left' ? -3 : dir === 'right' ? 3 : 0;
       g.fillStyle = OUT;
@@ -2122,15 +2123,234 @@ window.PETS_ART = (function () {
     if (lk.hat && lk.hat !== 'none') drawHat(g, lk.hat, dir, hy, lk);
     g.restore();
   }
-  function drawHair(g, lk, dir, hy) {
+  /* ---------- 머리 모양: 짧은·긴·올린·묶은(포니테일)·양갈래 ----------
+     뒤쪽 층(몸 뒤에 그림: 긴 뒷머리·꼬리) → 몸·얼굴 → 앞쪽 층(정수리·앞머리·옆머리·묶은 끈) */
+  const HAIR_STYLES = [['short', '짧은 머리'], ['long', '긴 머리'], ['bun', '올린 머리'], ['pony', '묶은 머리'], ['twin', '양갈래']];
+  const STYLE_OK = { short: 1, long: 1, bun: 1, pony: 1, twin: 1 };
+  const CROWN_HATS = { cap: 1, straw: 1, safari: 1, hardhat: 1, wizard: 1, grad: 1, beret: 1, chef: 1, gat: 1, fur: 1 };
+  const shadeMemo = {};
+  function shade(hex, amt) {
+    const k = hex + '|' + amt; if (shadeMemo[k]) return shadeMemo[k];
+    const n = parseInt(String(hex).slice(1, 7), 16); if (!isFinite(n)) return hex;
+    const f = (c) => Math.max(0, Math.min(255, Math.round(amt < 0 ? c * (1 + amt) : c + (255 - c) * amt)));
+    return (shadeMemo[k] = '#' + ((1 << 24) + (f(n >> 16) << 16) + (f((n >> 8) & 255) << 8) + f(n & 255)).toString(16).slice(1));
+  }
+  const tieOf = (lk) => (lk.hair === '#f58fb8' ? '#ffc23d' : '#ff5c8a');
+  function shine(g, cx, cy, r) { // 머리 윤기
+    g.save(); g.lineCap = 'round'; g.strokeStyle = 'rgba(255,255,255,.42)'; g.lineWidth = 1.6;
+    g.beginPath(); g.arc(cx, cy, r, Math.PI * 1.2, Math.PI * 1.38); g.stroke();
+    g.beginPath(); g.arc(cx, cy, r, Math.PI * 1.45, Math.PI * 1.5); g.stroke();
+    g.restore();
+  }
+  function strands(g, list) { // 머리결 선
+    g.save(); g.lineCap = 'round'; g.strokeStyle = 'rgba(20,24,40,.2)'; g.lineWidth = 0.9;
+    for (const [a, b, c, d, e, f] of list) { g.beginPath(); g.moveTo(a, b); g.quadraticCurveTo(c, d, e, f); g.stroke(); }
+    g.restore();
+  }
+  // 앞머리: 눈썹 바로 위에서 뭉툭하게 자르고, 끝이 살짝 갈라진 가닥(가운데가 조금 더 김)
+  const BANG_X = [8.8, 5.7, 2, -1.8, -5.5, -8.8];   // 앞모습: 오른쪽 관자놀이 → 왼쪽
+  const BANG_SX = [-2.6, 1.4, 5, 8.2, 9.8];         // 옆모습(오른쪽을 볼 때): 관자놀이 → 이마 앞
+  function bangEdge(g, hy, xs, endY, low) {
+    const n = xs.length - 1;
+    for (let i = 1; i <= n; i++) {
+      const xa = xs[i - 1], xb = xs[i], ya = i === 1 ? hy - endY[0] : hy - 2.05, yb = i === n ? hy - endY[1] : hy - 2.05;
+      const bottom = hy - low[i - 1], w = xb - xa;
+      // 끝은 거의 평평하게, 가닥 사이는 얇게 V자로 갈라지게
+      g.bezierCurveTo(xa + w * 0.12, bottom + 0.05, xb - w * 0.3, bottom + 0.2, xb, yb);
+    }
+  }
+  const bangsFront = (g, hy) => bangEdge(g, hy, BANG_X, [1.4, 1.4], [1.3, 1.05, 0.95, 1.05, 1.3]);
+  const bangsSide = (g, hy) => bangEdge(g, hy, BANG_SX, [1.6, 1.5], [1.3, 1.05, 1.05, 1.2]);
+  function bangLines(g, hy, xs) { // 앞머리 가닥 사이 결
+    g.save(); g.lineCap = 'round'; g.strokeStyle = 'rgba(20,24,40,.3)'; g.lineWidth = 0.9;
+    for (const x of xs) { g.beginPath(); g.moveTo(x, hy - 2.3); g.quadraticCurveTo(x + 0.15, hy - 3.9, x + 0.8, hy - 5.3); g.stroke(); }
+    g.restore();
+  }
+  const bangLinesFront = (g, hy) => bangLines(g, hy, BANG_X.slice(1, -1));
+  const bangLinesSide = (g, hy) => bangLines(g, hy, BANG_SX.slice(1, -1));
+  // 짧은 머리용 이전 앞머리(끝이 뾰족한 가닥)
+  function bangsPointyFront(g, hy) {
+    const pts = [[8.8, hy - 1.4], [5.6, hy - 2.1], [1.4, hy - 1.5], [-3, hy - 2.3], [-6.6, hy - 1.7], [-8.8, hy - 1.4]];
+    for (let i = 1; i < pts.length; i++) { const a = pts[i - 1], b = pts[i]; g.quadraticCurveTo((a[0] + b[0]) / 2 + 0.7, hy - 5.4, b[0], b[1]); }
+  }
+  function bangsPointySide(g, hy) {
+    g.quadraticCurveTo(0.8, hy - 5.6, 3.6, hy - 2.2);
+    g.quadraticCurveTo(5.8, hy - 5.8, 7, hy - 2.5);
+    g.quadraticCurveTo(8.4, hy - 5.2, 9.8, hy - 1.5);
+  }
+  // 앞모습 정수리 + 앞머리 + 옆머리
+  function capFront(g, hair, hy, side, pointy) {
     g.beginPath();
-    if (dir === 'up') { g.arc(0, hy, 10.4, 0, Math.PI * 2); paint(g, lk.hair, OUT, 1.3); if (lk.style === 'bun') { circ(g, 0, hy - 10, 4.5); paint(g, lk.hair, OUT, 1.2); } return; }
-    g.arc(0, hy, 10.4, Math.PI * 1.02, Math.PI * 1.98);
-    if (dir === 'down') { g.quadraticCurveTo(4, hy - 7, -1, hy - 3); g.quadraticCurveTo(-5, hy - 7, -10.3, hy - 1); }
-    else { const s = dir === 'left' ? -1 : 1; g.quadraticCurveTo(s * 3, hy - 5, s * -8, hy + 2); }
-    g.closePath(); paint(g, lk.hair, OUT, 1.2);
-    if (lk.style === 'bun') { circ(g, 0, hy - 11, 4.5); paint(g, lk.hair, OUT, 1.2); }
-    if (lk.style === 'long') { rr(g, -10.6, hy - 2, 3.6, 13, 1.8); paint(g, lk.hair, false); rr(g, 7, hy - 2, 3.6, 13, 1.8); paint(g, lk.hair, false); }
+    g.moveTo(-9.8, hy + side);
+    g.lineTo(-10.9, hy + 0.8);
+    g.arc(0, hy - 0.6, 11, Math.PI * 0.96, Math.PI * 2.04);
+    g.lineTo(9.8, hy + side);
+    g.quadraticCurveTo(8.6, hy + 1, 8.8, hy - 1.4);
+    if (pointy) bangsPointyFront(g, hy); else bangsFront(g, hy);
+    g.quadraticCurveTo(-8.6, hy + 1, -9.8, hy + side);
+    g.closePath(); paint(g, hair, OUT, 1.3);
+    if (!pointy) bangLinesFront(g, hy);
+  }
+  // 긴 머리: 정수리부터 등까지 하나로 이어진 모양.
+  // 몸 뒤에 한 번 그리고(back), 얼굴 위에서는 머리 동그라미 안쪽만 다시 그려서(front) 이음선 없이 한 덩어리로 보이게 함
+  function longFrontPath(g, hy, hs) {
+    g.beginPath();
+    g.moveTo(0, hy - 11.6);
+    g.bezierCurveTo(7.8, hy - 11.6, 12.4, hy - 7.6, 12.4, hy - 1.5);
+    g.lineTo(12.4 + hs, -15.2);                                    // 옆 테두리: 곧게
+    g.quadraticCurveTo(11.2 + hs * 0.8, -16.8, 10.1 + hs * 0.7, -14.3);
+    g.quadraticCurveTo(8.9 + hs * 0.6, -16.4, 7.8 + hs * 0.5, -14.6);
+    g.lineTo(-7.8 + hs * 0.5, -14.6);
+    g.quadraticCurveTo(-8.9 + hs * 0.6, -16.4, -10.1 + hs * 0.7, -14.3);
+    g.quadraticCurveTo(-11.2 + hs * 0.8, -16.8, -12.4 + hs, -15.2);
+    g.lineTo(-12.4, hy - 1.5);                                     // 옆 테두리: 곧게
+    g.bezierCurveTo(-12.4, hy - 7.6, -7.8, hy - 11.6, 0, hy - 11.6);
+    g.closePath();
+  }
+  function longFaceHole(g, hy) { // 앞모습에서 얼굴이 보이는 자리(앞머리 끝선 + 볼 옆 머리선)
+    g.moveTo(8.8, hy - 1.4);
+    bangsFront(g, hy);
+    g.bezierCurveTo(-8.6, hy + 2.5, -8, hy + 5.5, -7, hy + 8.4);
+    g.lineTo(-6, hy + 13); g.lineTo(6, hy + 13); g.lineTo(7, hy + 8.4);
+    g.bezierCurveTo(8, hy + 5.5, 8.6, hy + 2.5, 8.8, hy - 1.4);
+    g.closePath();
+  }
+  function longSidePath(g, hy, hs, tr) { // 오른쪽을 보는 기준
+    g.beginPath();
+    g.moveTo(9.8, hy - 1.5);
+    g.quadraticCurveTo(10.7, hy - 3, 10.15, hy - 4.9);
+    g.bezierCurveTo(9.2, hy - 10.6, -4.6, hy - 14.2, -10, hy - 6.8);
+    g.bezierCurveTo(-11.6, hy - 5.2, -12.4, hy - 2.6, -12.4, hy + 0.5);
+    g.lineTo(-12.4 - tr + hs * 0.6, -14.8);                          // 뒤쪽 테두리: 곧게
+    g.quadraticCurveTo(-11.2 - tr * 0.8, -16.6, -10.2 - tr * 0.7, -14.2);
+    g.quadraticCurveTo(-9 - tr * 0.5, -16.2, -7.8 - tr * 0.4, -14.6);
+    g.lineTo(-4.6, -15.4); g.lineTo(-3.4, hy + 9);
+    g.quadraticCurveTo(-4.4, hy + 4.4, -2.6, hy - 1.6);
+    bangsSide(g, hy);
+    g.closePath();
+  }
+  function drawLong(g, hair, dir, hy, hs, moving, layer) {
+    const side = dir !== 'down', s = dir === 'left' ? -1 : 1, tr = moving ? 1.6 : 0;
+    g.save();
+    if (side) g.scale(s, 1);
+    if (layer === 'front') { circ(g, 0, hy, 10.8); g.clip(); }
+    if (side) { longSidePath(g, hy, hs, tr); paint(g, hair, OUT, 1.3); if (layer === 'front') bangLinesSide(g, hy); }
+    else if (layer === 'back') { longFrontPath(g, hy, hs); paint(g, hair, OUT, 1.3); }
+    else {
+      longFrontPath(g, hy, hs); longFaceHole(g, hy); g.fillStyle = hair; g.fill('evenodd');
+      g.beginPath(); longFaceHole(g, hy); g.lineWidth = 1.3; g.strokeStyle = OUT; g.stroke();
+      bangLinesFront(g, hy);
+    }
+    g.restore();
+  }
+  // 옆모습 정수리·뒤통수(오른쪽을 보는 기준)
+  function capSide(g, hair, hy, nape, pointy) {
+    g.beginPath();
+    g.moveTo(9.8, hy - 1.5);
+    g.quadraticCurveTo(10.6, hy - 3, 9.95, hy - 4.65);
+    g.arc(-0.3, hy - 0.6, 11, -0.12 * Math.PI, 0.72 * Math.PI, true);
+    g.quadraticCurveTo(-6.2, hy + nape, -4.8, hy + 4.6);
+    g.quadraticCurveTo(-3.8, hy + 1.2, -2.6, hy - 1.6);
+    if (pointy) bangsPointySide(g, hy); else bangsSide(g, hy);
+    g.closePath(); paint(g, hair, OUT, 1.3);
+    if (!pointy) bangLinesSide(g, hy);
+  }
+  // 꼬리 한 가닥(포니테일·양갈래): 뿌리(rx,ry)에서 바깥(ox)으로 부풀었다가 끝(tx,ty)까지
+  function tail(g, color, rx, ry, ox, oy, tx, ty, w) {
+    g.beginPath();
+    g.moveTo(rx - w * 0.35, ry - w * 0.3);
+    g.bezierCurveTo(rx + (ox - rx) * 0.55, ry - w * 0.9, ox + w * 0.55, oy - w * 0.6, ox + w * 0.5, oy + w * 0.4);
+    g.bezierCurveTo(ox + w * 0.45, oy + (ty - oy) * 0.55, tx + w * 0.35, ty - w * 1.1, tx, ty);
+    g.bezierCurveTo(tx - w * 0.3, ty - w * 1.6, ox - w * 0.45, oy + (ty - oy) * 0.5, ox - w * 0.45, oy + w * 0.5);
+    g.bezierCurveTo(ox - w * 0.45, oy - w * 0.1, rx + (ox - rx) * 0.4, ry + w * 0.25, rx + w * 0.2, ry + w * 0.35);
+    g.closePath(); paint(g, color, OUT, 1.2);
+  }
+  function hairBack(g, lk, dir, hy, hs, moving) {
+    const sty = STYLE_OK[lk.style] ? lk.style : 'short', back = shade(lk.hair, -0.18);
+    if (sty === 'long') { drawLong(g, lk.hair, dir, hy, hs, moving, 'back'); return; }
+    if (dir === 'down') {
+      if (sty === 'pony') {
+        tail(g, back, 4, hy - 9, 13.2, hy - 1, 11 + hs * 1.2, -15.6, 5.2);
+      } else if (sty === 'twin') {
+        tail(g, lk.hair, 8.6, hy - 5, 13.8, hy + 2, 12 + hs * 1.1, -15.2, 4.6);
+        g.save(); g.scale(-1, 1); tail(g, lk.hair, 8.6, hy - 5, 13.8, hy + 2, 12 - hs * 1.1, -15.2, 4.6); g.restore();
+      }
+      return;
+    }
+    const s = dir === 'left' ? -1 : 1, tr = moving ? 1.6 : 0;
+    g.save(); g.scale(s, 1);
+    if (sty === 'pony') {
+      tail(g, lk.hair, -6.8, hy - 7, -13.6 - tr, hy - 1, -11.6 - tr * 1.4 + hs, -15.4, 5.2);
+    } else if (sty === 'twin') {
+      tail(g, back, -5.6, hy - 5.6, -12.6 - tr, hy + 1.5, -11 - tr * 1.2 + hs, -15.4, 4.4);
+    }
+    g.restore();
+  }
+  function hairFront(g, lk, dir, hy, hs, moving) {
+    const sty = STYLE_OK[lk.style] ? lk.style : 'short', hair = lk.hair, tie = tieOf(lk);
+    const bunOn = sty === 'bun' && !CROWN_HATS[lk.hat];
+    if (dir === 'up') { // 뒷모습: 뒤통수가 모두 머리카락
+      if (sty === 'long') {
+        g.beginPath(); g.moveTo(10.9, hy - 0.4);
+        g.arc(0, hy - 0.4, 10.9, 0, Math.PI, true);
+        g.lineTo(-10.9 + hs, -12.8);                                   // 옆 테두리: 곧게
+        g.lineTo(-8.2 + hs * 0.8, -15.2); g.lineTo(-5.4 + hs * 0.7, -12.2); g.lineTo(-2.7 + hs * 0.6, -14.8); g.lineTo(0 + hs * 0.6, -11.8);
+        g.lineTo(2.7 + hs * 0.6, -14.8); g.lineTo(5.4 + hs * 0.7, -12.2); g.lineTo(8.2 + hs * 0.8, -15.2); g.lineTo(10.9 + hs, -12.8);
+        g.closePath(); paint(g, hair, OUT, 1.3);
+        // 가운데 머리결: 위에서 아래로 곧은 일자 선
+        g.save(); g.lineCap = 'round'; g.strokeStyle = 'rgba(20,24,40,.2)'; g.lineWidth = 0.9;
+        for (const [x, y0] of [[-4.6, hy - 6], [0, hy - 7.6], [4.6, hy - 6]]) { g.beginPath(); g.moveTo(x, y0); g.lineTo(x + hs * 0.6, -15.6); g.stroke(); }
+        g.restore();
+      } else {
+        const tufts = sty === 'short';
+        g.beginPath(); g.moveTo(10.13, hy + 3.6);
+        g.arc(0, hy - 0.4, 10.9, 0.12 * Math.PI, 0.88 * Math.PI, true);
+        if (tufts) {
+          g.quadraticCurveTo(-9.6, hy + 8.4, -6.6, hy + 10.4); g.quadraticCurveTo(-4.8, hy + 9.2, -3.2, hy + 11.2);
+          g.quadraticCurveTo(-1.2, hy + 9.8, 0.6, hy + 11.5); g.quadraticCurveTo(2.4, hy + 9.8, 4, hy + 11);
+          g.quadraticCurveTo(5.6, hy + 9.4, 7, hy + 10.2); g.quadraticCurveTo(9.8, hy + 8.2, 10.13, hy + 3.6);
+        } else { g.quadraticCurveTo(-8.8, hy + 10.6, 0, hy + 10.8); g.quadraticCurveTo(8.8, hy + 10.6, 10.13, hy + 3.6); }
+        g.closePath(); paint(g, hair, OUT, 1.3);
+        if (sty === 'bun' || sty === 'pony') strands(g, [[-6, hy + 8, -4, hy, -1.2, hy - 5], [6, hy + 8, 4, hy, 1.2, hy - 5]]);
+        else if (sty === 'twin') { g.save(); g.strokeStyle = 'rgba(20,24,40,.25)'; g.lineWidth = 1; g.beginPath(); g.moveTo(0, hy - 10.4); g.lineTo(0, hy + 9); g.stroke(); g.restore(); }
+        else strands(g, [[-3, hy - 6, -5, hy + 2, -3.6, hy + 9], [3.4, hy - 6, 5.2, hy + 2, 3.6, hy + 9]]);
+        if (sty === 'pony') { tail(g, hair, 0, hy - 4, 0.2, hy + 4, hs * 1.4, -12.6, 6); ell(g, 0, hy - 4.6, 3.3, 2.2); paint(g, tie, OUT, 1.1); }
+        if (sty === 'twin') {
+          tail(g, hair, 6.4, hy - 4.6, 12.4, hy + 2, 11 + hs * 1.1, -14.6, 4.4);
+          g.save(); g.scale(-1, 1); tail(g, hair, 6.4, hy - 4.6, 12.4, hy + 2, 11 - hs * 1.1, -14.6, 4.4); g.restore();
+          circ(g, 7.2, hy - 4.6, 2.3); paint(g, tie, OUT, 1.1); circ(g, -7.2, hy - 4.6, 2.3); paint(g, tie, OUT, 1.1);
+        }
+        if (bunOn) { circ(g, 0, hy - 9.4, 4.8); paint(g, hair, OUT, 1.2); rr(g, -3.7, hy - 5.6, 7.4, 2.4, 1.2); paint(g, tie, OUT, 1); }
+      }
+      shine(g, 0, hy - 0.4, 8.2);
+      return;
+    }
+    if (sty === 'long') { // 긴 머리(앞·옆): 하나로 이어진 머리
+      drawLong(g, hair, dir, hy, hs, moving, 'front');
+      shine(g, dir === 'down' ? 0 : (dir === 'left' ? 0.3 : -0.3), hy - 0.6, 8.2);
+      return;
+    }
+    if (dir === 'down') { // 앞모습
+      if (bunOn) { circ(g, 0, hy - 12.3, 4.7); paint(g, hair, OUT, 1.2); }
+      capFront(g, hair, hy, sty === 'short' ? 3.2 : 1.4, sty === 'short');
+      shine(g, 0, hy - 0.6, 8.2);
+      if (bunOn) shine(g, 0, hy - 12.3, 3);
+      if (sty === 'twin') { circ(g, 10.1, hy - 4.6, 2.3); paint(g, tie, OUT, 1.1); circ(g, -10.1, hy - 4.6, 2.3); paint(g, tie, OUT, 1.1); }
+      return;
+    }
+    // 옆모습
+    const s = dir === 'left' ? -1 : 1, tr = moving ? 1.6 : 0;
+    g.save(); g.scale(s, 1);
+    if (bunOn) { circ(g, -4.6, hy - 11.2, 4.6); paint(g, hair, OUT, 1.2); }
+    capSide(g, hair, hy, sty === 'short' ? 9 : 7.6, sty === 'short');
+    shine(g, -0.3, hy - 0.6, 8.2);
+    if (bunOn) shine(g, -4.6, hy - 11.2, 3);
+    if (sty === 'pony') { g.save(); g.translate(-8.7, hy - 6.4); g.rotate(-0.5); ell(g, 0, 0, 1.9, 2.8); paint(g, tie, OUT, 1.1); g.restore(); }
+    if (sty === 'twin') {
+      tail(g, hair, -4.8, hy - 4.6, -7.2 - tr * 0.4, hy + 3.4, -6.6 - tr + hs * 0.6, -15.6, 4.2);
+      circ(g, -5, hy - 5, 2.3); paint(g, tie, OUT, 1.1);
+    }
+    g.restore();
   }
   function drawHat(g, hat, dir, hy, lk) {
     const s = dir === 'left' ? -1 : 1;
@@ -3046,7 +3266,7 @@ window.PETS_ART = (function () {
   }
   function makerHTML(lk) {
     const sw = (key, arr) => arr.map((c) => `<button class="sw${lk[key] === c ? ' on' : ''}" style="background:${c}" data-k="${key}" data-v="${c}" aria-label="${key} 색"></button>`).join('');
-    const styles = [['short', '짧은 머리'], ['long', '긴 머리'], ['bun', '올린 머리']].map(([v, n]) => `<button class="swt${lk.style === v ? ' on' : ''}" data-k="style" data-v="${v}">${n}</button>`).join('');
+    const styles = HAIR_STYLES.map(([v, n]) => `<button class="swt${lk.style === v ? ' on' : ''}" data-k="style" data-v="${v}">${n}</button>`).join('');
     return `<canvas width="232" height="232" id="mkFace"></canvas><div><div class="swrow"><span>피부</span>${sw('skin', SKIN)}</div><div class="swrow"><span>머리색</span>${sw('hair', HAIR)}</div><div class="swrow"><span>머리</span>${styles}</div><div class="swrow"><span>윗옷</span>${sw('shirt', SHIRT)}</div><div class="swrow"><span>바지</span>${sw('pants', PANTS)}</div></div>`;
   }
   function bindMaker(root, lk, onChange) {
@@ -3434,7 +3654,7 @@ window.PETS_ART = (function () {
 
   /* ===================== 시작 화면 ===================== */
   let draftLook = null;
-  function randomLook() { return { skin: pick(SKIN), hair: pick(HAIR.slice(0, 4)), style: pick(['short', 'long', 'bun']), shirt: pick(SHIRT), pants: pick(PANTS), hat: 'none' }; }
+  function randomLook() { return { skin: pick(SKIN), hair: pick(HAIR.slice(0, 4)), style: pick(HAIR_STYLES.map((x) => x[0])), shirt: pick(SHIRT), pants: pick(PANTS), hat: 'none' }; }
   let draftTouched = false;
   function setErr(html) { $('#tErr').innerHTML = html || ''; ['#inCls', '#inNum', '#inName'].forEach((x) => $(x).classList.remove('bad')); }
   function fail(sel, msg) { setErr(msg); $(sel).classList.add('bad'); try { $(sel).focus(); } catch (e) { /* 무시 */ } return false; }
@@ -3554,7 +3774,7 @@ window.PETS_ART = (function () {
   else boot((hot && hot.data) || {});
   // 시험용 창구: 주소 끝에 ?debug=1 을 붙였을 때만 열려요
   let dbg = false; try { dbg = /[?&]debug=1\b/.test(location.search); } catch (e) { /* 무시 */ }
-  if (dbg) window.__game = { Upd, Poll, T, API, enterTeacher, openTeacherLogin, openTeacher, accountReset, showNotices, render, update, drawGround, pet, PETS, scoreOf, buildRanks, localRanks, renamePet, startGame, canvasText, st: () => st, player, QUESTS, POOLS, interact, things, walkTo, openQuests, openWrong, openMap, openRank, openSettings, openShop, startQuest, Quiz, cam, toTitle, begin, solid, gi, W, H, TS, objs };
+  if (dbg) window.__game = { drawChar, portrait, SKIN, HAIR, SHIRT, PANTS, Upd, Poll, T, API, enterTeacher, openTeacherLogin, openTeacher, accountReset, showNotices, render, update, drawGround, pet, PETS, scoreOf, buildRanks, localRanks, renamePet, startGame, canvasText, st: () => st, player, QUESTS, POOLS, interact, things, walkTo, openQuests, openWrong, openMap, openRank, openSettings, openShop, startQuest, Quiz, cam, toTitle, begin, solid, gi, W, H, TS, objs };
 })();
 </script>
 </body>
