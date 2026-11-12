@@ -311,6 +311,12 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .badge-big.gradset { width: auto; height: auto; display: flex; gap: 14px; justify-content: center; align-items: center; }
 .badge-big.gradset svg { width: 84px; height: 84px; flex: none; }
 .badge-big.gradset canvas { width: 84px; height: 84px; border-radius: 50%; border: 2.5px solid var(--ink); background: radial-gradient(circle at 50% 78%, #fff3c4, #ffd98a 70%); }
+.parts .tot { background: none; border: 1.5px dashed var(--line); color: var(--ink); }
+.parts .tot i { font-style: normal; color: var(--ink-soft); margin-right: 3px; }
+.myscore em.soft { color: var(--ink-soft); font-style: normal; }
+.gradn { white-space: nowrap; }
+.rank .dim, .tstat .dim { color: var(--ink-soft); }
+
 /* ---------- 선생님 공지·새 버전 알림 ---------- */
 #topMsgs { position: fixed; left: 12px; top: 72px; z-index: 28; width: min(540px, calc(100% - 220px)); display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
 #notices:empty { display: none; }
@@ -359,7 +365,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .tsum span b { font-family: var(--font-display); font-weight: 400; font-size: 16px; }
 .tsum .rnote { border: 0; background: none; padding: 0; margin: 0 0 0 auto; }
 .twrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border: 2px solid var(--line); border-radius: 12px; background: #fff; }
-.tstat { min-width: 660px; }
+.tstat { min-width: 720px; }
 .tstat th, .tstat td { padding: 7px 9px; white-space: nowrap; }
 .tstat tbody tr:last-child td { border-bottom: 0; }
 .tstat td:last-child { text-align: right; }
@@ -2401,7 +2407,7 @@ window.PETS_ART = (function () {
   const badgeCount = () => (st ? Object.keys(st.badges).length : 0);
   const playerKey = (cls, num) => `${GRADE}-${cls}-${num}`;
   function newState(name, cls, num, look) {
-    return { v: 2, created: Date.now(), key: playerKey(cls, num), grade: GRADE, cls, num, name, look, coins: 0, earned: 0, badges: {}, quests: {}, chests: {}, signs: {}, wrong: [], seen: {}, mastered: {}, genOk: {}, stats: { a: 0, c: 0, pools: {} }, owned: ['none'], pets: [], pet: null, petNames: {}, graduated: false, finalBest: 0, met: false, track: null, pos: null, dismissed: [], updated: Date.now(), sound: true, guide: true };
+    return { v: 2, created: Date.now(), key: playerKey(cls, num), grade: GRADE, cls, num, name, look, coins: 0, earned: 0, badges: {}, quests: {}, chests: {}, signs: {}, wrong: [], seen: {}, mastered: {}, genOk: {}, stats: { a: 0, c: 0, pools: {} }, owned: ['none'], pets: [], pet: null, petNames: {}, graduated: false, gradCount: 0, today: null, finalBest: 0, met: false, track: null, pos: null, dismissed: [], updated: Date.now(), sound: true, guide: true };
   }
   // 랭킹 점수 = 메달×100 + 맞힌 문제(서로 다른 문제)×10 + 푼 문제×1 − 남은 오답×5 + 모은 코인÷10
   function scoreOf(s) {
@@ -2412,6 +2418,20 @@ window.PETS_ART = (function () {
     const score = Math.max(0, medals * 100 + uniq * 10 + solved - wrongLeft * 5 + Math.floor(earned / 10));
     return { medals, uniq, solved, wrongLeft, earned, score, acc: solved ? right / solved : 0 };
   }
+  // 오늘 날짜(한국 시간) — 서버와 같은 기준으로 밤 12시에 바뀜
+  const dayKST = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+  function today() { // 오늘 기록(날짜가 바뀌면 새로 시작)
+    const d = dayKST();
+    if (!st.today || st.today.d !== d) st.today = { d, a: 0, c: 0, u: {}, gu: {}, m: 0, coins: 0, g: 0 };
+    return st.today;
+  }
+  // 오늘 점수 = 오늘 받은 메달×100 + 오늘 맞힌 문제(서로 다른 문제)×10 + 오늘 푼 문제×1 + 오늘 모은 코인÷10 (매일 밤 12시에 새로 시작)
+  function todayOf(s) {
+    const t = s && s.today && s.today.d === dayKST() ? s.today : null;
+    if (!t) return { medals: 0, uniq: 0, solved: 0, coins: 0, grads: 0, score: 0 };
+    const uniq = Object.keys(t.u || {}).length + Object.values(t.gu || {}).reduce((a, n) => a + Math.min(n, GEN_CAP), 0);
+    return { medals: t.m || 0, uniq, solved: t.a || 0, coins: t.coins || 0, grads: t.g || 0, score: (t.m || 0) * 100 + uniq * 10 + (t.a || 0) + Math.floor((t.coins || 0) / 10) };
+  }
   let saveTimer = 0;
   function save() {
     if (!st) return;
@@ -2419,7 +2439,7 @@ window.PETS_ART = (function () {
     if (!LS.set(KEY + ':p:' + st.key, st) && LS_OK && !lsWarned) { lsWarned = true; toast('이 기기의 저장 공간이 가득 찼어요. 설정에서 다른 친구의 오래된 기록을 지워 주세요.'); }
     const sc = scoreOf(st);
     const list = LS.get(KEY + ':players') || [];
-    const e = { key: st.key, name: st.name, cls: st.cls, num: st.num, updated: st.updated, score: sc.score, medals: sc.medals, acc: sc.acc, grad: !!st.graduated };
+    const e = { key: st.key, name: st.name, cls: st.cls, num: st.num, updated: st.updated, score: sc.score, medals: sc.medals, acc: sc.acc, grad: !!st.graduated, grads: st.gradCount || 0, day: dayKST(), tScore: todayOf(st).score };
     const i = list.findIndex((x) => x.key === st.key); if (i >= 0) list[i] = e; else list.push(e);
     LS.set(KEY + ':players', list.slice(-60));
   }
@@ -2461,8 +2481,8 @@ window.PETS_ART = (function () {
     get gas() { return !!(window.google && window.google.script && window.google.script.run); },
     on() { return this.gas || !!CFG.API_URL; },
     payload(event, extra) {
-      const sc = scoreOf(st);
-      return Object.assign({ action: 'record', event, grade: GRADE, cls: st.cls, num: st.num, name: st.name, created: st.created || 0, age: ageOf(), score: sc.score, medals: sc.medals, uniq: sc.uniq, solved: sc.solved, correct: st.stats.c, wrongLeft: sc.wrongLeft, earned: sc.earned, coins: st.coins, graduated: !!st.graduated, finalBest: st.finalBest || 0, done: Object.keys(st.badges).join(','), pet: st.pet ? PMAP[st.pet].name : '' }, extra || {});
+      const sc = scoreOf(st), ts = todayOf(st);
+      return Object.assign({ action: 'record', event, grade: GRADE, cls: st.cls, num: st.num, name: st.name, created: st.created || 0, age: ageOf(), score: sc.score, medals: sc.medals, uniq: sc.uniq, solved: sc.solved, correct: st.stats.c, wrongLeft: sc.wrongLeft, earned: sc.earned, coins: st.coins, graduated: !!st.graduated, gradCount: st.gradCount || 0, finalBest: st.finalBest || 0, done: Object.keys(st.badges).join(','), pet: st.pet ? PMAP[st.pet].name : '', day: dayKST(), tMedals: ts.medals, tUniq: ts.uniq, tSolved: ts.solved, tCoins: ts.coins }, extra || {});
     },
     inflight: 0,
     send(event, extra) {
@@ -2560,8 +2580,12 @@ window.PETS_ART = (function () {
     } else best = [tx, ty];
     const p = findPath(sx, sy, best[0], best[1]);
     if (!p) return false;
+    if (!p.length) { // 이미 그 칸에 서 있음: 빈 길을 남기지 않고 그 자리에서 끝(말 걸기 클릭이면 바로 말 걸기)
+      player.path = null; player.onArrive = null; player.moving = false;
+      if (onArrive) onArrive();
+      return true;
+    }
     player.path = p; player.onArrive = onArrive || null;
-    if (!p.length && onArrive) { player.path = null; player.onArrive = null; onArrive(); }
     return true;
   }
 
@@ -2608,6 +2632,8 @@ window.PETS_ART = (function () {
       const len = Math.hypot(mx, my) || 1, k = Math.min(1, len);
       player.moving = tryMove((mx / len) * speed * k, (my / len) * speed * k) || false;
       setDir(mx, my);
+    } else if (player.path && !player.path.length) {
+      player.path = null; player.onArrive = null; player.moving = false;
     } else if (player.path && !busy()) {
       const wp = player.path[0];
       const dx = wp.x - player.x, dy = wp.y - player.y, d = Math.hypot(dx, dy);
@@ -2903,7 +2929,7 @@ window.PETS_ART = (function () {
     const qs = st.quests[q.id] || (st.quests[q.id] = { tries: 0, best: 0 });
     qs.tries++; qs.best = Math.max(qs.best, ok);
     const pass = ok >= CFG.PASS_SCORE, first = pass && !st.badges[q.id];
-    if (first) { st.badges[q.id] = true; addCoins(30, false); Snd.play('badge'); confetti(); if (st.track === q.id) st.track = null; }
+    if (first) { st.badges[q.id] = true; today().m++; addCoins(30, false); Snd.play('badge'); confetti(); if (st.track === q.id) st.track = null; }
     API.send('quest', { quest: q.id, subj: q.subj, got: ok, of: total, pass, practice: !!practice, wrong: log.filter((l) => !l.ok).map((l) => ({ id: l.q.gen ? l.pool + ':자동' : l.q.id, t: plain(l.q.q).slice(0, 70) })) });
     save(); refreshHud();
     return { pass, first };
@@ -2917,6 +2943,7 @@ window.PETS_ART = (function () {
   function endFinal(ok, total, log) {
     st.finalBest = Math.max(st.finalBest || 0, ok);
     const pass = ok >= CFG.FINAL_PASS, first = pass && !st.graduated;
+    if (pass) { st.gradCount = (st.gradCount || 0) + 1; today().g++; } // 졸업 횟수: 졸업 시험에 통과할 때마다 1회
     if (first) {
       st.graduated = true; if (!st.owned.includes('grad')) st.owned.push('grad'); st.look.hat = 'grad';
       if (!st.pets.includes('owl')) st.pets.push('owl');
@@ -3023,6 +3050,8 @@ window.PETS_ART = (function () {
   };
   function record(q, pool, ok, given, cfg) {
     st.stats.a++; if (ok) st.stats.c++;
+    const td = today(); td.a++;
+    if (ok) { td.c++; if (q.gen) td.gu[pool] = (td.gu[pool] || 0) + 1; else td.u[q.id] = 1; }
     const ps = st.stats.pools[pool] || (st.stats.pools[pool] = { a: 0, c: 0 }); ps.a++; if (ok) ps.c++;
     if (!q.gen) markSeen(pool, q.id);
     if (ok) { if (q.gen) st.genOk[pool] = (st.genOk[pool] || 0) + 1; else st.mastered[q.id] = 1; }
@@ -3038,7 +3067,7 @@ window.PETS_ART = (function () {
     }
     refreshHud();
   }
-  function addCoins(n, quiet) { st.coins += n; st.earned = (st.earned || 0) + n; refreshHud(); if (!quiet) toast(`+${n} 코인`, 'gold'); Snd.play('coin'); fx.push({ kind: 'text', text: `+${n}`, x: player.x, y: player.y - 54, vy: -30, life: 1.2 }); }
+  function addCoins(n, quiet) { st.coins += n; st.earned = (st.earned || 0) + n; if (n > 0) today().coins += n; refreshHud(); if (!quiet) toast(`+${n} 코인`, 'gold'); Snd.play('coin'); fx.push({ kind: 'text', text: `+${n}`, x: player.x, y: player.y - 54, vy: -30, life: 1.2 }); }
   function confetti() { for (let i = 0; i < 40; i++) fx.push({ kind: 'conf', x: player.x + (Math.random() - 0.5) * 20, y: player.y - 40, vx: (Math.random() - 0.5) * 220, vy: -160 - Math.random() * 140, g: 380, life: 1.6 + Math.random() * 0.6, color: pick(['#ffc23d', '#ff6b4a', '#18a88f', '#2f8fd0', '#8e6cf0', '#ff86a8']) }); }
 
   /* ===================== 상자·표지판 ===================== */
@@ -3140,14 +3169,15 @@ window.PETS_ART = (function () {
     return {
       ok: true, total: rows.length,
       me: i >= 0 ? { rank: i + 1, classRank: mates.findIndex((r) => r.key === me.key) + 1, classTotal: mates.length } : null,
-      top: rows.slice(0, 10).map((r, k) => ({ rank: k + 1, cls: r.cls, name: r.name, score: r.score, medals: r.medals, grad: !!r.grad, me: r.key === me.key })),
-      myClass: mates.map((r, k) => ({ rank: k + 1, num: r.num, name: r.name, score: r.score, medals: r.medals, grad: !!r.grad, me: r.key === me.key })),
-      classes: classes.map((c, k) => ({ rank: k + 1, cls: c.cls, total: c.total, count: c.count, avg: c.avg, grads: c.grads, me: String(c.cls) === String(me.cls) }))
+      top: rows.slice(0, 10).map((r, k) => ({ rank: k + 1, cls: r.cls, num: r.num, name: r.name, score: r.score, medals: r.medals, grads: r.grads || 0, me: r.key === me.key })),
+      myClass: mates.map((r, k) => ({ rank: k + 1, cls: r.cls, num: r.num, name: r.name, score: r.score, medals: r.medals, grads: r.grads || 0, me: r.key === me.key })),
+      classes: classes.map((c, k) => ({ rank: k + 1, cls: c.cls, total: c.total, count: c.count, avg: c.avg, me: String(c.cls) === String(me.cls) }))
     };
   }
   function localRanks() {
     save();
-    const rows = (LS.get(KEY + ':players') || []).filter((x) => x.cls && x.num).map((x) => ({ key: x.key, cls: x.cls, num: x.num, name: x.name, score: x.score || 0, medals: x.medals || 0, acc: x.acc || 0, grad: x.grad }));
+    const d = dayKST();
+    const rows = (LS.get(KEY + ':players') || []).filter((x) => x.cls && x.num && x.day === d && x.tScore > 0).map((x) => ({ key: x.key, cls: x.cls, num: x.num, name: x.name, score: x.tScore || 0, medals: x.medals || 0, grads: x.grads || (x.grad ? 1 : 0), acc: x.acc || 0 }));
     return buildRanks(rows, { key: st.key, cls: st.cls });
   }
   function openRank() {
@@ -3155,22 +3185,23 @@ window.PETS_ART = (function () {
     ui.rankTab = ui.rankTab || 'all'; ui.rankData = null; ui.rankNote = '';
     const draw = () => {
       if (ui.modal !== 'rank') return;
-      const sc = scoreOf(st), d = ui.rankData;
+      const ts = todayOf(st), sc = scoreOf(st), d = ui.rankData;
       const part = (label, n, pts) => `<span><i>${label}</i>${fmt(n)}개<em class="${pts < 0 ? 'minus' : ''}">${pts < 0 ? '−' : '+'}${fmt(Math.abs(pts))}</em></span>`;
-      let html = head('명예의 전당', API.on() ? '6학년 친구들과 점수를 겨뤄요' : '이 기기에서 모험한 친구들의 기록이에요');
+      const gradTxt = (n) => (n ? `<span class="gradn">🎓 ${n}회</span>` : '<span class="dim">-</span>');
+      let html = head('명예의 전당', API.on() ? '오늘의 순위 · 매일 밤 12시에 새로 시작해요' : '이 기기에서 모험한 친구들의 오늘 기록이에요');
       html += `<div class="tabs" role="tablist">${[['all', '전체 랭킹'], ['class', '우리 반 랭킹'], ['classes', '반별 랭킹']].map(([k, n]) => `<button class="tab${ui.rankTab === k ? ' on' : ''}" data-tab="${k}" role="tab" aria-selected="${ui.rankTab === k}">${n}</button>`).join('')}</div><div class="sbody">`;
-      html += `<div class="mycard"><div class="myscore"><small>${esc(st.cls)}반 ${esc(st.num)}번 ${esc(st.name)}</small><b>${fmt(sc.score)}<span>점</span></b>${d && d.me ? `<em>전체 ${d.me.rank}위 · 우리 반 ${d.me.classRank}위</em>` : ''}</div><div class="parts">${part('메달', sc.medals, sc.medals * 100)}${part('맞힌 문제', sc.uniq, sc.uniq * 10)}${part('푼 문제', sc.solved, sc.solved)}${part('남은 오답', sc.wrongLeft, -sc.wrongLeft * 5)}${part('모은 코인', sc.earned, Math.floor(sc.earned / 10))}</div></div>`;
+      html += `<div class="mycard"><div class="myscore"><small>${esc(st.cls)}반 ${esc(st.num)}번 ${esc(st.name)} · 오늘 점수</small><b>${fmt(ts.score)}<span>점</span></b>${d && d.me ? `<em>전체 ${d.me.rank}위 · 우리 반 ${d.me.classRank}위</em>` : ts.score ? '' : '<em class="soft">오늘 문제를 풀면 순위에 올라가요!</em>'}</div><div class="parts">${part('오늘 메달', ts.medals, ts.medals * 100)}${part('오늘 맞힌 문제', ts.uniq, ts.uniq * 10)}${part('오늘 푼 문제', ts.solved, ts.solved)}${part('오늘 모은 코인', ts.coins, Math.floor(ts.coins / 10))}<span class="tot"><i>총 메달</i>${sc.medals}개 · <i>졸업</i>${st.gradCount || 0}회</span></div></div>`;
       if (!d) html += '<div class="empty">순위를 불러오는 중…</div>';
       else if (ui.rankTab === 'all') {
-        html += d.top.length ? `<table class="rank"><thead><tr><th>순위</th><th>반</th><th>이름</th><th>점수</th><th>메달</th></tr></thead><tbody>${d.top.map((r) => `<tr class="${r.me ? 'me' : ''}"><td class="n">${rankBadge(r.rank)}</td><td>${esc(r.cls)}반</td><td>${esc(r.name)}${r.grad ? ' <span class="grad" title="졸업">🎓</span>' : ''}</td><td><b>${fmt(r.score)}</b></td><td>${r.medals}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">아직 기록이 없어요.</div>';
+        html += d.top.length ? `<table class="rank"><thead><tr><th>순위</th><th>반</th><th>이름</th><th>오늘 점수</th><th>총 메달</th><th>졸업</th></tr></thead><tbody>${d.top.map((r) => `<tr class="${r.me ? 'me' : ''}"><td class="n">${rankBadge(r.rank)}</td><td>${esc(r.cls)}반</td><td>${esc(r.name)}</td><td><b>${fmt(r.score)}</b></td><td>${r.medals}개</td><td>${gradTxt(r.grads)}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">오늘은 아직 기록이 없어요. 문제를 풀면 첫 번째로 올라가요!</div>';
         if (d.me) html += `<div class="rankme">내 순위 <b>${d.me.rank}위</b><span>/ ${d.total}명</span></div>`;
       } else if (ui.rankTab === 'class') {
-        html += d.myClass.length ? `<table class="rank"><thead><tr><th>순위</th><th>번호</th><th>이름</th><th>점수</th><th>메달</th></tr></thead><tbody>${d.myClass.map((r) => `<tr class="${r.me ? 'me' : ''}"><td class="n">${rankBadge(r.rank)}</td><td>${esc(r.num)}번</td><td>${esc(r.name)}${r.grad ? ' <span class="grad" title="졸업">🎓</span>' : ''}</td><td><b>${fmt(r.score)}</b></td><td>${r.medals}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">우리 반 기록이 아직 없어요.</div>';
+        html += d.myClass.length ? `<table class="rank"><thead><tr><th>순위</th><th>번호</th><th>이름</th><th>오늘 점수</th><th>총 메달</th><th>졸업</th></tr></thead><tbody>${d.myClass.map((r) => `<tr class="${r.me ? 'me' : ''}"><td class="n">${rankBadge(r.rank)}</td><td>${esc(r.num)}번</td><td>${esc(r.name)}</td><td><b>${fmt(r.score)}</b></td><td>${r.medals}개</td><td>${gradTxt(r.grads)}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">오늘은 우리 반 기록이 아직 없어요.</div>';
       } else {
-        html += d.classes.length ? `<table class="rank"><thead><tr><th>순위</th><th>반</th><th>총점</th><th>참여</th><th>평균</th><th>졸업</th></tr></thead><tbody>${d.classes.map((c) => `<tr class="${c.me ? 'me' : ''}"><td class="n">${rankBadge(c.rank)}</td><td>6학년 ${esc(c.cls)}반</td><td><b>${fmt(c.total)}</b></td><td>${c.count}명</td><td>${fmt(c.avg)}</td><td>${c.grads}명</td></tr>`).join('')}</tbody></table><p class="rnote">반 총점은 참여한 친구들 점수를 모두 더한 값이에요. 많이 참여할수록 우리 반 점수가 올라가요!</p>` : '<div class="empty">아직 기록이 없어요.</div>';
+        html += d.classes.length ? `<table class="rank"><thead><tr><th>순위</th><th>반</th><th>오늘 총점</th><th>참여</th><th>평균</th></tr></thead><tbody>${d.classes.map((c) => `<tr class="${c.me ? 'me' : ''}"><td class="n">${rankBadge(c.rank)}</td><td>6학년 ${esc(c.cls)}반</td><td><b>${fmt(c.total)}</b></td><td>${c.count}명</td><td>${fmt(c.avg)}</td></tr>`).join('')}</tbody></table><p class="rnote">반 총점은 오늘 참여한 친구들의 오늘 점수를 모두 더한 값이에요. 많이 참여할수록 우리 반 점수가 올라가요!</p>` : '<div class="empty">오늘은 아직 기록이 없어요.</div>';
       }
       if (ui.rankNote) html += `<p class="rnote warn">${ui.rankNote}</p>`;
-      html += '<p class="rnote">점수 = 메달×100 + 맞힌 문제×10 + 푼 문제×1 − 남은 오답×5 + 모은 코인÷10<br>맞힌 문제는 서로 다른 문제만 세요(수학 자동 문제는 단원마다 20개까지). 오답 노트에서 다시 풀어 맞히면 감점이 사라져요.</p>';
+      html += '<p class="rnote">오늘 점수 = 오늘 받은 메달×100 + 오늘 맞힌 문제×10 + 오늘 푼 문제×1 + 오늘 모은 코인÷10<br>매일 밤 12시에 새로 시작해요. 맞힌 문제는 하루에 서로 다른 문제만 세요(수학 자동 문제는 단원마다 20개까지). 총 메달과 졸업 횟수는 그대로 쌓여요.</p>';
       if (d) html += `<p class="rnote live">${Math.max(10, CFG.RANK_REFRESH_SEC)}초마다 자동으로 새로고침돼요 · 마지막 갱신 ${clock(ui.rankAt || Date.now())}</p>`;
       html += '</div><div class="sfoot"><button class="btn primary" id="rc">닫기</button></div>';
       const keep = $('#sheet').scrollTop;
@@ -3628,9 +3659,10 @@ window.PETS_ART = (function () {
     if (!T.cls) { box.innerHTML = '<div class="empty">아직 기록이 없어요. 학생들이 게임을 시작하면 여기에 반이 생겨요.</div>'; return; }
     if (!d) { box.innerHTML = '<div class="empty">불러오는 중…</div>'; return; }
     if (!d.length) { box.innerHTML = `<div class="empty">6학년 ${T.cls}반에는 아직 기록이 없어요.</div>`; return; }
-    const on = d.filter((x) => x.online).length, grads = d.filter((x) => x.grad).length, avg = Math.round(d.reduce((a, x) => a + x.score, 0) / d.length);
-    box.innerHTML = `<div class="tsum"><span>참여 <b>${d.length}</b>명</span><span>지금 접속 <b>${on}</b>명</span><span>졸업 <b>${grads}</b>명</span><span>평균 점수 <b>${fmt(avg)}</b></span><span class="rnote">마지막 갱신 ${clock(T.statusAt || Date.now())}</span></div>
-      <div class="twrap"><table class="rank tstat"><thead><tr><th>번호</th><th>이름</th><th>점수</th><th>메달</th><th>남은 오답</th><th>정답률</th><th>마지막 접속</th><th></th></tr></thead><tbody>${d.map((x) => `<tr><td>${x.num}번</td><td class="nm"><span class="dot${x.online ? ' on' : ''}"></span>${esc(x.name)}${x.grad ? ' <span title="졸업">🎓</span>' : ''}</td><td><b>${fmt(x.score)}</b></td><td>${x.medals}</td><td>${x.wrongLeft}</td><td>${x.solved ? Math.round(x.acc * 100) + '%' : '-'}</td><td>${x.online ? '<span class="live">접속 중</span>' : ago(Math.max(x.seen || 0, x.updated || 0) + (T.skew || 0))}</td><td><button class="btn small ghost danger" data-del="${esc(x.key)}" data-who="${esc(x.num + '번 ' + x.name)}">삭제</button></td></tr>`).join('')}</tbody></table></div>`;
+    const on = d.filter((x) => x.online).length, grads = d.filter((x) => x.grad).length, played = d.filter((x) => x.today > 0);
+    const avg = played.length ? Math.round(played.reduce((a, x) => a + x.today, 0) / played.length) : 0;
+    box.innerHTML = `<div class="tsum"><span>전체 <b>${d.length}</b>명</span><span>오늘 참여 <b>${played.length}</b>명</span><span>지금 접속 <b>${on}</b>명</span><span>졸업 <b>${grads}</b>명</span><span>오늘 평균 <b>${fmt(avg)}</b>점</span><span class="rnote">마지막 갱신 ${clock(T.statusAt || Date.now())}</span></div>
+      <div class="twrap"><table class="rank tstat"><thead><tr><th>번호</th><th>이름</th><th>오늘 점수</th><th>총 메달</th><th>졸업</th><th>남은 오답</th><th>정답률</th><th>마지막 접속</th><th></th></tr></thead><tbody>${d.map((x) => `<tr><td>${x.num}번</td><td class="nm"><span class="dot${x.online ? ' on' : ''}"></span>${esc(x.name)}</td><td>${x.today ? `<b>${fmt(x.today)}</b>` : '<span class="dim">-</span>'}</td><td>${x.medals}개</td><td>${(x.grads || (x.grad ? 1 : 0)) ? `🎓 ${x.grads || 1}회` : '<span class="dim">-</span>'}</td><td>${x.wrongLeft}</td><td>${x.solved ? Math.round(x.acc * 100) + '%' : '-'}</td><td>${x.online ? '<span class="live">접속 중</span>' : ago(Math.max(x.seen || 0, x.updated || 0) + (T.skew || 0))}</td><td><button class="btn small ghost danger" data-del="${esc(x.key)}" data-who="${esc(x.num + '번 ' + x.name)}">삭제</button></td></tr>`).join('')}</tbody></table></div>`;
     box.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', () => deleteStudent(b.dataset.del, b.dataset.who)));
   }
   function deleteStudent(key, who) {
@@ -3699,6 +3731,7 @@ window.PETS_ART = (function () {
   function begin(sv) {
     st = Object.assign(newState(sv.name, sv.cls, sv.num, sv.look || randomLook()), sv);
     if (!sv.created) st.created = 1;
+    if (st.graduated && !st.gradCount) st.gradCount = 1; // 예전에 졸업한 학생은 1회부터
     st.key = playerKey(st.cls, st.num);
     st.stats = Object.assign({ a: 0, c: 0, pools: {} }, st.stats || {}); st.stats.pools = st.stats.pools || {};
     if (st.earned == null) st.earned = st.coins || 0;
@@ -3721,14 +3754,20 @@ window.PETS_ART = (function () {
   }
 
   /* ===================== 시작 ===================== */
-  let last = 0, mmTick = 0;
+  let last = 0, mmTick = 0, frameErrs = 0;
   function frame(ms) {
+    requestAnimationFrame(frame); // 다음 화면을 먼저 예약 → 이번 화면에서 오류가 나도 게임이 멈추지 않음
     const t = ms / 1000, dt = Math.min(0.05, last ? t - last : 0.016); last = t;
-    update(dt, t); render(t);
-    if (mode === 'play' && mmBase && ++mmTick % 6 === 0) drawMini(mmg, mmBase, mm.width / W, t, false);
-    if (Upd.pending && mmTick % 20 === 0) Upd.tick();
-    if (mode !== 'play') mmTick++;
-    requestAnimationFrame(frame);
+    try {
+      update(dt, t); render(t);
+      if (mode === 'play' && mmBase && ++mmTick % 6 === 0) drawMini(mmg, mmBase, mm.width / W, t, false);
+      if (Upd.pending && mmTick % 20 === 0) Upd.tick();
+      if (mode !== 'play') mmTick++;
+    } catch (err) {
+      if (frameErrs++ < 5) console.error('[지식의 섬] 화면 그리기 중 오류(게임은 계속돼요)', err);
+      player.path = null; player.onArrive = null; // 이동 상태를 정리해서 같은 오류가 되풀이되지 않게
+      try { if (typeof ctx.reset === 'function') ctx.reset(); else cv.width = cv.width; } catch (e2) { /* 무시 */ } // 그리다 만 캔버스 상태(잘라내기 등) 초기화
+    }
   }
   // 캔버스 글자는 글꼴 조각이 받아진 뒤에 그려야 깨지지 않는다
   function canvasText() {
@@ -3774,7 +3813,7 @@ window.PETS_ART = (function () {
   else boot((hot && hot.data) || {});
   // 시험용 창구: 주소 끝에 ?debug=1 을 붙였을 때만 열려요
   let dbg = false; try { dbg = /[?&]debug=1\b/.test(location.search); } catch (e) { /* 무시 */ }
-  if (dbg) window.__game = { drawChar, portrait, SKIN, HAIR, SHIRT, PANTS, Upd, Poll, T, API, enterTeacher, openTeacherLogin, openTeacher, accountReset, showNotices, render, update, drawGround, pet, PETS, scoreOf, buildRanks, localRanks, renamePet, startGame, canvasText, st: () => st, player, QUESTS, POOLS, interact, things, walkTo, openQuests, openWrong, openMap, openRank, openSettings, openShop, startQuest, Quiz, cam, toTitle, begin, solid, gi, W, H, TS, objs };
+  if (dbg) window.__game = { todayOf, dayKST, drawChar, portrait, SKIN, HAIR, SHIRT, PANTS, Upd, Poll, T, API, enterTeacher, openTeacherLogin, openTeacher, accountReset, showNotices, render, update, drawGround, pet, PETS, scoreOf, buildRanks, localRanks, renamePet, startGame, canvasText, st: () => st, player, QUESTS, POOLS, interact, things, walkTo, openQuests, openWrong, openMap, openRank, openSettings, openShop, startQuest, Quiz, cam, toTitle, begin, solid, gi, W, H, TS, objs };
 })();
 </script>
 </body>
