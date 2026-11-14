@@ -48,7 +48,7 @@ window.GAME_CONFIG = {
 }
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; overflow: hidden; background: #3e9fd6; color: var(--ink); font-family: var(--font-body); -webkit-tap-highlight-color: transparent; }
-body { touch-action: none; user-select: none; -webkit-user-select: none; }
+body { touch-action: none; user-select: none; -webkit-user-select: none; word-break: keep-all; overflow-wrap: break-word; } /* 한글은 낱말(띄어쓰기) 단위로 줄바꿈, 너무 긴 낱말만 중간에서 */
 button { font: inherit; color: inherit; cursor: pointer; }
 button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--sea); outline-offset: 2px; }
 [hidden] { display: none !important; }
@@ -113,7 +113,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .shead p { margin: 2px 0 0; color: var(--ink-soft); font-size: 14px; }
 .shead .x { margin-left: auto; width: 40px; height: 40px; border-radius: 12px; border: 2.5px solid var(--ink); background: var(--paper); box-shadow: 0 3px 0 var(--ink); font-family: var(--font-display); font-size: 20px; flex: none; }
 .sbody { padding: 16px 18px 18px; }
-.sfoot { display: flex; gap: 10px; justify-content: flex-end; align-items: center; flex-wrap: wrap; padding: 0 18px 18px; }
+.sfoot { display: flex; gap: 10px; justify-content: flex-end; align-items: center; flex-wrap: wrap; padding: 12px 18px 18px; position: sticky; bottom: 0; background: var(--paper); z-index: 1; border-radius: 0 0 16px 16px; } /* 창이 길어도 아래 버튼(다음 문제·닫기)은 늘 보이게 */
+#qFeed { scroll-margin-bottom: 96px; } /* 답을 고른 뒤 해설이 아래 고정 버튼에 가리지 않게 */
 
 /* ---------- 퀴즈 ---------- */
 .qdots { display: flex; gap: 5px; margin-left: auto; }
@@ -230,8 +231,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .swt.on { background: var(--sun); }
 
 /* ---------- 시작 화면 ---------- */
-#title { position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; padding: 16px; overflow: auto; touch-action: pan-y; background: linear-gradient(180deg, rgba(20,60,110,.15), rgba(20,40,70,.55)); }
-.tcard { width: min(560px, 100%); padding: 22px 22px 20px; user-select: text; -webkit-user-select: text; }
+/* 카드가 화면보다 길면 위에서부터 보이고 스크롤(가운데 정렬 때문에 윗부분이 잘리지 않게 margin:auto로 가운데) */
+#title { position: fixed; inset: 0; z-index: 40; display: flex; align-items: flex-start; justify-content: flex-start; padding: 16px; overflow: auto; touch-action: pan-y; background: linear-gradient(180deg, rgba(20,60,110,.15), rgba(20,40,70,.55)); }
+.tcard { width: min(560px, 100%); margin: auto; padding: 22px 22px 20px; user-select: text; -webkit-user-select: text; }
 .logo { font-family: var(--font-display); font-size: clamp(48px, 10vw, 78px); line-height: .95; margin: 0; color: #fff; -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 0 6px 0 var(--ink); letter-spacing: -1px; }
 .logo span { color: var(--sun); }
 .tsub { font-family: var(--font-display); font-size: 18px; margin: 10px 0 0; }
@@ -421,6 +423,118 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   .toast, .feed, .badge-big, .notice, #updBar { animation: none; }
 }
 
+/* ---------- 오늘의 목표 ---------- */
+.chip.goal { cursor: pointer; color: var(--ink); }
+.chip.goal:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+.chip.goal .gl { font-size: 15px; }
+.chip.goal.done { background: #d8f6ee; }
+.goals { display: grid; gap: 9px; }
+.gitem { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto auto; align-items: center; gap: 10px; background: #fff; border: 2px solid var(--line); border-radius: 13px; padding: 10px 12px; }
+.gitem .gck { width: 30px; height: 30px; border-radius: 50%; border: 2.5px solid var(--ink); display: grid; place-items: center; font-family: var(--font-display); font-size: 18px; background: #fff; }
+.gitem.done { background: #eefbf6; border-color: #9fdcc8; }
+.gitem.done .gck { background: var(--mint); color: #fff; }
+.gitem .gi b { font-family: var(--font-display); font-weight: 400; font-size: 17px; }
+.gitem .gn { font-family: var(--font-display); font-size: 16px; white-space: nowrap; }
+.gbonus { text-align: center; font-family: var(--font-display); font-size: 17px; margin: 14px 0 0; padding: 10px; border-radius: 12px; background: #fff6d6; border: 2px dashed #e8c66a; }
+.gbonus.done { background: #d8f6ee; border-color: #9fdcc8; }
+
+/* ---------- 약한 단원 ---------- */
+.weakbox { background: #fff6e8; border: 2px solid #f0cf8f; border-radius: 14px; padding: 10px 12px; margin: 12px 0 4px; display: grid; gap: 7px; }
+.weakbox .wkh b { font-family: var(--font-display); font-weight: 400; font-size: 17px; margin-right: 8px; }
+.weakbox .wkh span { font-size: 13.5px; color: var(--ink-soft); }
+.wkrow { display: grid; grid-template-columns: minmax(0, 1fr) 120px 44px; align-items: center; gap: 8px; font-size: 14.5px; }
+.wkrow .bar { margin-top: 0; }
+.wkrow .bar > i { background: #ff8a5c; }
+.wkrow b { font-family: var(--font-display); font-weight: 400; text-align: right; }
+.wkn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#wkGo { justify-self: start; font-size: 16px; padding: 8px 14px; }
+#wkGo small { font-family: var(--font-body); font-size: 12.5px; }
+
+/* ---------- 오답 노트 쪽수 ---------- */
+.wrong .qref { margin: 6px 0 6px; font-size: 13px; }
+.wrong .qref svg { width: 18px; height: 18px; }
+
+/* ---------- 같은 학생을 창 두 개로 열었을 때 ---------- */
+#tabLock { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(18, 30, 52, .62); }
+#tabLock[hidden] { display: none; }
+.lockcard { width: min(480px, 100%); padding: 22px; text-align: center; }
+.lockcard h2 { font-family: var(--font-display); font-weight: 400; font-size: 24px; margin: 0 0 10px; }
+.lockcard p { font-size: 16px; line-height: 1.65; margin: 0 0 14px; }
+.lockbtns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 10px; }
+.lockcard small { color: var(--ink-soft); font-size: 13px; }
+
+/* ---------- 선생님: 학생 자세히 ---------- */
+.linkbtn { font: inherit; color: var(--ink); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-decoration-color: #b9c3d3; text-underline-offset: 3px; }
+.linkbtn:hover { text-decoration-color: var(--ink); }
+.sdhead { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.sdhead h3 { font-family: var(--font-display); font-weight: 400; font-size: 20px; margin: 0; flex: 1; min-width: 0; }
+.sdhead .dot { display: inline-block; width: 11px; height: 11px; border-radius: 50%; background: #cfd5df; border: 1.5px solid var(--ink); margin-right: 8px; vertical-align: 1px; }
+.sdhead .dot.on { background: #2fcf7d; }
+.units { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.usub { background: #fff; border: 2px solid var(--line); border-radius: 12px; padding: 8px 10px; }
+.usub h4 { font-family: var(--font-display); font-weight: 400; font-size: 16px; margin: 0 0 6px; }
+.urow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 8px; font-size: 13.5px; padding: 5px 0; border-top: 1px dashed var(--line); }
+.urow:first-of-type { border-top: 0; }
+.urow .un { grid-column: 1 / -1; line-height: 1.35; }
+.urow .un em { font-style: normal; font-size: 12px; color: #fff; background: var(--berry); border-radius: 999px; padding: 0 7px; margin-left: 4px; }
+.urow .bar { margin-top: 2px; }
+.urow .uv { font-family: var(--font-display); font-size: 14px; white-space: nowrap; }
+.urow .uv small { font-family: var(--font-body); font-size: 11.5px; color: var(--ink-soft); }
+.urow.hi .bar > i { background: var(--mint); }
+.urow.mid .bar > i { background: var(--sun); }
+.urow.lo .bar > i { background: var(--berry); }
+.urow.none { color: var(--ink-soft); }
+.wlist { margin: 0; padding: 0 0 0 22px; display: grid; gap: 8px; }
+.wlist li { background: #fff; border: 2px solid var(--line); border-radius: 12px; padding: 8px 10px; }
+.wlist li p { margin: 4px 0 2px; font-size: 15px; line-height: 1.5; }
+.wlist li small { color: var(--berry); font-size: 13px; }
+.wlist .pill { font-size: 12px; }
+@media (max-width: 760px) { .units { grid-template-columns: 1fr; } }
+
+/* ---------- 휴대폰 가로 화면(높이가 낮을 때): 지도·안내 상자·버튼을 작게 ---------- */
+@media (max-height: 500px) and (orientation: landscape) {
+  #hud { gap: 6px; top: 8px; left: 8px; }
+  .chip { font-size: 14px; padding: 3px 9px 3px 3px; }
+  .chip .ico { width: 22px; height: 22px; }
+  .chip.name canvas { width: 24px; height: 24px; }
+  .chip.goal .gl { display: none; }
+  #toolbar { top: 8px; right: 8px; gap: 5px; }
+  .tool { width: 44px; height: 46px; font-size: 10.5px; border-radius: 12px; }
+  .tool svg { width: 20px; height: 20px; }
+  #minimap { top: 60px; right: 8px; width: 104px; height: 81px; border-radius: 11px; }
+  #questTrack { display: none !important; }
+  #joy { width: 104px; height: 104px; left: 14px; bottom: 12px; }
+  #joyKnob { width: 46px; height: 46px; margin: -23px 0 0 -23px; }
+  #actBtn { width: 72px; height: 72px; font-size: 15px; }
+  #modal { padding: 6px; }
+  .shead { padding: 8px 12px 7px; }
+  .shead canvas { width: 40px; height: 40px; }
+  .shead h2 { font-size: 18px; }
+  .sbody { padding: 10px 14px 12px; }
+  .sfoot { padding: 8px 14px 10px; }
+  #dialog .portrait { width: 56px; height: 56px; }
+  #dialog .dtext { font-size: 15px; }
+}
+@media (max-width: 640px) { .chip.goal .gl { display: none; } }
+
+/* ---------- 졸업장 인쇄: 졸업장만 A4 한 장에 ---------- */
+@media print {
+  @page { size: A4 portrait; margin: 12mm; }
+  body.print-cert { background: #fff !important; overflow: visible !important; }
+  body.print-cert > *:not(#modal) { display: none !important; }
+  body.print-cert #modal { position: static !important; display: block !important; padding: 0 !important; background: none !important; }
+  body.print-cert #sheet { width: 100% !important; max-height: none !important; overflow: visible !important; border: 0 !important; box-shadow: none !important; background: #fff !important; }
+  body.print-cert #sheet .shead, body.print-cert #sheet .sfoot { display: none !important; }
+  body.print-cert #sheet .sbody { padding: 0 !important; }
+  body.print-cert .cert { -webkit-print-color-adjust: exact; print-color-adjust: exact; min-height: 268mm; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; border: 7px double #1d2b45; border-radius: 6px; padding: 18mm 14mm; margin: 0; background: #fffdf5; }
+  body.print-cert .cert h2 { font-size: 64px; letter-spacing: 14px; }
+  body.print-cert .cert .who { font-size: 46px; margin-top: 28px; }
+  body.print-cert .cert p { font-size: 21px; max-width: 26em; }
+  body.print-cert .cert .badges { gap: 8px; margin-top: 18px; }
+  body.print-cert .cert .badges svg { width: 50px; height: 50px; }
+  body.print-cert .cert .sig { font-size: 24px; margin-top: 30px; }
+}
+
 </style>
 </head>
 <body>
@@ -430,6 +544,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   <div class="chip name"><canvas id="hudFace" width="60" height="60"></canvas><span id="hudName"></span></div>
   <div class="chip" title="코인"><svg class="ico" viewBox="0 0 32 32"><circle cx="16" cy="16" r="12" fill="#ffc23d" stroke="#1d2b45" stroke-width="2.5"/><circle cx="16" cy="16" r="7" fill="none" stroke="#c8871a" stroke-width="2"/><path d="M16 11v10" stroke="#c8871a" stroke-width="2.5" stroke-linecap="round"/></svg><span id="hudCoins">0</span></div>
   <div class="chip" title="모은 메달"><svg class="ico" viewBox="0 0 32 32"><path d="M10 3h5l3 9h-5zM22 3h-5l-3 9h5z" fill="#ff6b4a" stroke="#1d2b45" stroke-width="2"/><circle cx="16" cy="20" r="9" fill="#ffc23d" stroke="#1d2b45" stroke-width="2.5"/><path d="M16 15l1.6 3.3 3.6.5-2.6 2.5.6 3.6-3.2-1.7-3.2 1.7.6-3.6-2.6-2.5 3.6-.5z" fill="#fff"/></svg><span id="hudBadges">0/13</span></div>
+  <button class="chip goal" id="hudGoal" title="오늘의 목표 (G)"><svg class="ico" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="12.5" fill="#fff" stroke="#1d2b45" stroke-width="2.5"/><circle cx="16" cy="16" r="8" fill="#ff8a7a" stroke="#1d2b45" stroke-width="2"/><circle cx="16" cy="16" r="3.6" fill="#fff" stroke="#1d2b45" stroke-width="2"/></svg><span class="gl">오늘의 목표</span><span id="hudGoalN">0/3</span></button>
 </div>
 
 <div id="toolbar" hidden>
@@ -458,6 +573,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 <div id="modal" hidden><div id="sheet" class="sticker" role="dialog" aria-modal="true"></div></div>
 <div id="topMsgs"><div id="updBar" role="status" hidden></div><div id="notices" aria-live="polite"></div></div>
 <div id="toasts" aria-live="polite"></div>
+<div id="tabLock" hidden></div>
 
 <div id="title">
   <div class="tcard sticker">
@@ -2422,8 +2538,13 @@ window.PETS_ART = (function () {
   const dayKST = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
   function today() { // 오늘 기록(날짜가 바뀌면 새로 시작)
     const d = dayKST();
-    if (!st.today || st.today.d !== d) st.today = { d, a: 0, c: 0, u: {}, gu: {}, m: 0, coins: 0, g: 0 };
-    return st.today;
+    // sc: 과목별 맞힌 수 · fix: 고친 오답 · weak: 약한 단원 복습 · sg: 읽은 표지판 · qp: 통과한 퀘스트 · chest: 연 상자 · ft: 본 졸업 시험 · goals/gdone/gb: 오늘의 목표
+    if (!st.today || st.today.d !== d) st.today = { d };
+    const t = st.today, def = { a: 0, c: 0, m: 0, coins: 0, g: 0, fix: 0, weak: 0, qp: 0, chest: 0, ft: 0, gb: false };
+    for (const k in def) if (typeof t[k] !== typeof def[k]) t[k] = def[k]; // 예전 판에서 만든 오늘 기록에도 새 칸을 채움
+    for (const k of ['u', 'gu', 'sc', 'sg', 'gdone']) if (!t[k] || typeof t[k] !== 'object') t[k] = {};
+    if (!Array.isArray(t.goals)) t.goals = null;
+    return t;
   }
   // 오늘 점수 = 오늘 받은 메달×100 + 오늘 맞힌 문제(서로 다른 문제)×10 + 오늘 푼 문제×1 + 오늘 모은 코인÷10 (매일 밤 12시에 새로 시작)
   function todayOf(s) {
@@ -2432,17 +2553,54 @@ window.PETS_ART = (function () {
     const uniq = Object.keys(t.u || {}).length + Object.values(t.gu || {}).reduce((a, n) => a + Math.min(n, GEN_CAP), 0);
     return { medals: t.m || 0, uniq, solved: t.a || 0, coins: t.coins || 0, grads: t.g || 0, score: (t.m || 0) * 100 + uniq * 10 + (t.a || 0) + Math.floor((t.coins || 0) / 10) };
   }
-  let saveTimer = 0;
+  let saveTimer = 0; // 12초마다 자동 저장(위치 포함)
+  let dirty = false; // 시트로 아직 보내지 않은 변화(문제를 풀면 true)
   function save() {
-    if (!st) return;
+    if (!st || tabLocked) return;
+    if (!ownsTab()) { lockTab(); return; } // 다른 창이 이 학생을 이어서 하고 있으면 저장하지 않음(기록 덮어쓰기 방지)
     st.pos = { x: player.x, y: player.y }; st.updated = Date.now();
-    if (!LS.set(KEY + ':p:' + st.key, st) && LS_OK && !lsWarned) { lsWarned = true; toast('이 기기의 저장 공간이 가득 찼어요. 설정에서 다른 친구의 오래된 기록을 지워 주세요.'); }
+    if (!LS.set(KEY + ':p:' + st.key, st) && LS_OK && !lsWarned) { lsWarned = true; toast('이 기기의 저장 공간이 가득 찼어요. 선생님께 알려 주세요. (선생님 모드 → 이 기기)'); }
     const sc = scoreOf(st);
     const list = LS.get(KEY + ':players') || [];
     const e = { key: st.key, name: st.name, cls: st.cls, num: st.num, updated: st.updated, score: sc.score, medals: sc.medals, acc: sc.acc, grad: !!st.graduated, grads: st.gradCount || 0, day: dayKST(), tScore: todayOf(st).score };
     const i = list.findIndex((x) => x.key === st.key); if (i >= 0) list[i] = e; else list.push(e);
     LS.set(KEY + ':players', list.slice(-60));
   }
+
+  /* ===================== 같은 학생을 창(탭) 두 개로 열었을 때 ===================== */
+  // 나중에 연 창만 저장해요. 먼저 연 창은 멈추고, [이 창에서 계속하기]를 누르면 최신 기록을 불러와 이어 가요.
+  const TAB_ID = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  let tabLocked = false;
+  const activeKey = (k) => KEY + ':active:' + k;
+  function claimTab() { if (st) LS.set(activeKey(st.key), { tab: TAB_ID, at: Date.now() }); }
+  function ownsTab() { if (!st || !LS_OK) return true; const a = LS.get(activeKey(st.key)); return !a || a.tab === TAB_ID; }
+  function releaseTab() { if (st && LS_OK) { const a = LS.get(activeKey(st.key)); if (a && a.tab === TAB_ID) LS.del(activeKey(st.key)); } }
+  function lockTab() {
+    if (tabLocked || !st) return;
+    tabLocked = true;
+    Quiz.done = true; ui.dialog = false; $('#dialog').hidden = true;
+    ui.modal = null; $('#modal').hidden = true; $('#sheet').innerHTML = ''; $('#sheet').classList.remove('wide');
+    Poll.stop(); player.path = null; player.onArrive = null; for (const k in keys) keys[k] = false; joy.on = false;
+    mode = 'locked'; ui.near = null; renderPrompt(); refreshTrack();
+    const box = $('#tabLock');
+    box.innerHTML = `<div class="sticker lockcard" role="alertdialog" aria-labelledby="lkT"><h2 id="lkT">다른 창에서 이어서 하고 있어요</h2><p><b>6학년 ${esc(st.cls)}반 ${esc(st.num)}번 ${esc(st.name)}</b> 학생으로 다른 창(탭)에서 게임을 열었어요.<br>기록이 서로 덮이지 않도록 이 창은 멈췄어요.</p><div class="lockbtns"><button class="btn ghost" id="lkTitle">처음 화면</button><button class="btn primary" id="lkGo">이 창에서 계속하기</button></div><small>이 창에서 계속하면 다른 창이 멈추고, 다른 창에서 한 것까지 모두 이어져요.</small></div>`;
+    box.hidden = false;
+    $('#lkGo').addEventListener('click', () => { const sv = LS.get(KEY + ':p:' + st.key) || st; box.hidden = true; box.innerHTML = ''; tabLocked = false; begin(sv); toast('이 창에서 이어서 해요!', 'good'); });
+    $('#lkTitle').addEventListener('click', () => { box.hidden = true; box.innerHTML = ''; tabLocked = false; st = null; toTitle(); });
+  }
+  window.addEventListener('storage', (e) => {
+    if (!st || tabLocked || mode !== 'play' || !e.key || e.key !== activeKey(st.key)) return;
+    let a = null; try { a = JSON.parse(e.newValue || 'null'); } catch (er) { a = null; }
+    if (a && a.tab !== TAB_ID) lockTab();
+  });
+  // 창을 닫거나 다른 창으로 갈 때: 저장하고, 시트로 아직 안 보낸 기록이 있으면 보내기
+  function flush() {
+    if (!st || mode !== 'play' || tabLocked) return;
+    save();
+    if (dirty) { dirty = false; API.beacon('sync'); }
+  }
+  window.addEventListener('pagehide', flush);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); });
 
   /* ===================== 소리 ===================== */
   const Snd = {
@@ -2482,11 +2640,12 @@ window.PETS_ART = (function () {
     on() { return this.gas || !!CFG.API_URL; },
     payload(event, extra) {
       const sc = scoreOf(st), ts = todayOf(st);
-      return Object.assign({ action: 'record', event, grade: GRADE, cls: st.cls, num: st.num, name: st.name, created: st.created || 0, age: ageOf(), score: sc.score, medals: sc.medals, uniq: sc.uniq, solved: sc.solved, correct: st.stats.c, wrongLeft: sc.wrongLeft, earned: sc.earned, coins: st.coins, graduated: !!st.graduated, gradCount: st.gradCount || 0, finalBest: st.finalBest || 0, done: Object.keys(st.badges).join(','), pet: st.pet ? PMAP[st.pet].name : '', day: dayKST(), tMedals: ts.medals, tUniq: ts.uniq, tSolved: ts.solved, tCoins: ts.coins }, extra || {});
+      return Object.assign({ action: 'record', event, grade: GRADE, cls: st.cls, num: st.num, name: st.name, created: st.created || 0, age: ageOf(), score: sc.score, medals: sc.medals, uniq: sc.uniq, solved: sc.solved, correct: st.stats.c, wrongLeft: sc.wrongLeft, earned: sc.earned, coins: st.coins, graduated: !!st.graduated, gradCount: st.gradCount || 0, finalBest: st.finalBest || 0, done: Object.keys(st.badges).join(','), pet: st.pet ? PMAP[st.pet].name : '', day: dayKST(), tMedals: ts.medals, tUniq: ts.uniq, tSolved: ts.solved, tCoins: ts.coins, units: unitsText() }, extra || {});
     },
     inflight: 0,
     send(event, extra) {
-      if (!this.on() || !st) return Promise.resolve();
+      if (!this.on() || !st || tabLocked) return Promise.resolve();
+      dirty = false;
       const body = JSON.stringify(this.payload(event, extra));
       this.inflight++;
       const done = () => { this.inflight = Math.max(0, this.inflight - 1); };
@@ -2495,6 +2654,14 @@ window.PETS_ART = (function () {
         if (this.gas) { try { window.google.script.run.withSuccessHandler(fin).withFailureHandler(fin).api(body); } catch (e) { fin(); } return; }
         try { fetch(CFG.API_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body }).then(fin, fin); } catch (e) { fin(); }
       });
+    },
+    // 창을 닫는 순간에도 끝까지 보내지는 방법(sendBeacon)
+    beacon(event) {
+      if (!this.on() || !st || tabLocked) return;
+      if (this.gas) { this.send(event); return; }
+      const body = JSON.stringify(this.payload(event));
+      try { if (navigator.sendBeacon && navigator.sendBeacon(CFG.API_URL, new Blob([body], { type: 'text/plain;charset=utf-8' }))) return; } catch (e) { /* 무시 */ }
+      try { fetch(CFG.API_URL, { method: 'POST', mode: 'no-cors', keepalive: true, headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body }); } catch (e) { /* 무시 */ }
     },
     // 대답을 읽어야 하는 요청(랭킹·공지·선생님)
     get(q) {
@@ -2510,8 +2677,12 @@ window.PETS_ART = (function () {
     },
     rank() { return this.get({ action: 'rank', grade: GRADE, cls: st.cls, num: st.num }); },
     poll() { return this.get({ action: 'poll', grade: GRADE, cls: st.cls, num: st.num, created: st.created || 0, age: ageOf() }); },
-    teacher(op, extra) { return this.get(Object.assign({ action: 'teacher', op, grade: GRADE, pin: T.pin, dev: devId() }, extra || {})); }
+    teacher(op, extra) { return this.get(Object.assign({ action: 'teacher', op, grade: GRADE, pin: T.pin, dev: devId() }, extra || {})); },
+    // 이 반·번호가 시트에 어떤 이름으로 있는지(다른 기기에서 번호를 잘못 썼을 때 알려 주려고)
+    who(cls, num) { return this.get({ action: 'who', grade: GRADE, cls, num }); }
   };
+  // 단원별 맞힌 수/푼 수(선생님 반 현황에서 봄) 예: kor1:20/25,math3:7/12
+  function unitsText() { return Object.keys(st.stats.pools || {}).filter((p) => POOLS[p]).map((p) => { const s = st.stats.pools[p]; return `${p}:${s.c || 0}/${s.a || 0}`; }).join(','); }
 
   /* ===================== 화면·카메라 ===================== */
   const cv = $('#world'), ctx = cv.getContext('2d');
@@ -2890,11 +3061,11 @@ window.PETS_ART = (function () {
     const n = PRINCIPAL;
     if (!st.met) {
       st.met = true; save();
-      Dlg.open(n, [`지식의 섬에 온 걸 환영해요, ${esc(st.name)} 학생!`, '섬 곳곳의 선생님들이 <b>국어·수학·사회</b> 퀘스트를 내 줄 거예요. 머리 위에 노란 <b>!</b> 표시가 있는 사람에게 말을 걸어 보세요.', '퀘스트 13개를 통과해 메달을 모두 모으면 광장의 <b>졸업의 문</b>이 열려요.', ui.touch ? '왼쪽 아래 조이스틱으로 움직이고, 노란 버튼으로 말을 걸어요. 가고 싶은 곳을 눌러도 걸어가요.' : '방향키나 WASD로 움직이고, 스페이스바로 말을 걸어요. 가고 싶은 곳을 마우스로 눌러도 걸어가요.', '보물상자와 <b>지식 표지판</b>도 찾아보세요. 노란 화살표가 다음 목적지를 알려 줄 거예요. 그럼 출발!'], { buttons: [{ label: '출발!', cls: 'primary' }] });
+      Dlg.open(n, [`지식의 섬에 온 걸 환영해요, ${esc(st.name)} 학생!`, '섬 곳곳의 선생님들이 <b>국어·수학·사회</b> 퀘스트를 내 줄 거예요. 머리 위에 노란 <b>!</b> 표시가 있는 사람에게 말을 걸어 보세요.', '퀘스트 13개를 통과해 메달을 모두 모으면 광장의 <b>졸업의 문</b>이 열려요.', ui.touch ? '왼쪽 아래 조이스틱으로 움직이고, 노란 버튼으로 말을 걸어요. 가고 싶은 곳을 눌러도 걸어가요.' : '방향키나 WASD로 움직이고, 스페이스바로 말을 걸어요. 가고 싶은 곳을 마우스로 눌러도 걸어가요.', '왼쪽 위 <b>오늘의 목표</b> 세 가지를 해내면 보너스 코인을 받아요. 목표는 매일 밤 12시에 바뀌어요.', '보물상자와 <b>지식 표지판</b>도 찾아보세요. 노란 화살표가 다음 목적지를 알려 줄 거예요. 그럼 출발!'], { buttons: [{ label: '출발!', cls: 'primary' }] });
       return;
     }
     const left = QUESTS.length - badgeCount();
-    const lines = left ? [`지금까지 메달 ${badgeCount()}개를 모았네요. 앞으로 ${left}개 남았어요!`, '틀린 문제는 오른쪽 위 <b>오답</b> 노트에서 다시 풀 수 있어요. 시험 전에 꼭 복습하세요.'] : st.graduated ? ['졸업을 축하해요! 학사모가 정말 잘 어울리네요.', '복습은 계속할 수 있어요. 오답 노트도 한번 살펴보세요.'] : ['메달을 모두 모았군요! 광장의 <b>졸업의 문</b>으로 가 보세요.'];
+    const lines = left ? [`지금까지 메달 ${badgeCount()}개를 모았네요. 앞으로 ${left}개 남았어요!`, '틀린 문제는 오른쪽 위 <b>오답</b> 노트에서 다시 풀 수 있어요. 시험 전에 꼭 복습하세요.', '<b>퀘스트</b> 목록에서 정답률이 낮은 <b>약한 단원</b>을 골라 복습할 수도 있어요.'] : st.graduated ? ['졸업을 축하해요! 학사모가 정말 잘 어울리네요.', '광장의 <b>졸업의 문</b>에서 졸업 시험에 다시 도전할 수 있어요. 통과할 때마다 졸업 횟수가 1회씩 늘어요.', '복습도 계속할 수 있어요. 오답 노트도 한번 살펴보세요.'] : ['메달을 모두 모았군요! 광장의 <b>졸업의 문</b>으로 가 보세요.'];
     Dlg.open(n, lines, { buttons: [{ label: '고맙습니다', cls: 'primary' }] });
   }
   function talkGate() {
@@ -2904,7 +3075,7 @@ window.PETS_ART = (function () {
       Dlg.open(n, [`굳게 잠긴 문이에요. 메달 ${QUESTS.length}개가 모두 있어야 열려요. (지금 ${badgeCount()}개)`, `아직 만나지 못한 선생님: ${miss.slice(0, 6).join(', ')}${miss.length > 6 ? ' 외 ' + (miss.length - 6) + '명' : ''}`], { buttons: [{ label: '닫기', cls: 'primary' }] });
       return;
     }
-    Dlg.open(n, [st.graduated ? `다시 졸업 시험에 도전할 수 있어요. 최고 기록은 ${st.finalBest}점이에요.` : '메달 13개가 반짝이며 문이 열렸어요!', `<b>졸업 시험</b>: 국어·수학·사회 ${CFG.FINAL_QUESTIONS}문제 중 ${CFG.FINAL_PASS}문제 이상 맞히면 졸업장을 받아요.`], { buttons: [{ label: '나중에', cls: 'ghost' }, { label: '졸업 시험 시작', cls: 'primary', fn: startFinal }] });
+    Dlg.open(n, [st.graduated ? `다시 졸업 시험에 도전할 수 있어요. 최고 기록은 ${st.finalBest}점이에요.` : '메달 13개가 반짝이며 문이 열렸어요!', st.graduated ? `<b>졸업 시험</b>: 국어·수학·사회 ${CFG.FINAL_QUESTIONS}문제 중 ${CFG.FINAL_PASS}문제 이상 맞히면 통과예요. 통과하면 졸업 횟수가 1회 늘어요. (지금 ${st.gradCount || 0}회)` : `<b>졸업 시험</b>: 국어·수학·사회 ${CFG.FINAL_QUESTIONS}문제 중 ${CFG.FINAL_PASS}문제 이상 맞히면 졸업장을 받아요.`], { buttons: [{ label: '나중에', cls: 'ghost' }, { label: '졸업 시험 시작', cls: 'primary', fn: startFinal }] });
   }
 
   /* ===================== 문제 뽑기 ===================== */
@@ -2922,27 +3093,54 @@ window.PETS_ART = (function () {
     return shuffle(out);
   }
 
+  // 시트 '오답' 탭으로 보낼 틀린 문제 목록
+  const wrongList = (log) => log.filter((l) => !l.ok).map((l) => ({ id: l.q.gen ? l.pool + ':자동' : l.q.id, t: plain(l.q.q).slice(0, 70) }));
   function startQuest(q, practice) {
-    Quiz.start({ title: `${q.npc.name}의 퀘스트`, sub: `${q.unit} · ${q.title}`, look: q.npc.look, items: drawFrom(q.pool, CFG.QUESTIONS_PER_QUEST), coin: practice ? 2 : 10, questId: q.id, retry: () => startQuest(q, practice), onEnd: (ok, total, log) => endQuest(q, practice, ok, total, log) });
+    Quiz.start({ title: `${q.npc.name}의 퀘스트`, sub: `${q.unit} · ${q.title}`, look: q.npc.look, items: drawFrom(q.pool, CFG.QUESTIONS_PER_QUEST), coin: practice ? 2 : 10, questId: q.id, retry: () => startQuest(q, practice),
+      onQuit: (ok, n, log) => API.send('quest', { quest: q.id, subj: q.subj, got: ok, of: n, pass: false, practice: !!practice, quit: true, wrong: wrongList(log) }),
+      onEnd: (ok, total, log) => endQuest(q, practice, ok, total, log) });
   }
   function endQuest(q, practice, ok, total, log) {
     const qs = st.quests[q.id] || (st.quests[q.id] = { tries: 0, best: 0 });
     qs.tries++; qs.best = Math.max(qs.best, ok);
     const pass = ok >= CFG.PASS_SCORE, first = pass && !st.badges[q.id];
     if (first) { st.badges[q.id] = true; today().m++; addCoins(30, false); Snd.play('badge'); confetti(); if (st.track === q.id) st.track = null; }
-    API.send('quest', { quest: q.id, subj: q.subj, got: ok, of: total, pass, practice: !!practice, wrong: log.filter((l) => !l.ok).map((l) => ({ id: l.q.gen ? l.pool + ':자동' : l.q.id, t: plain(l.q.q).slice(0, 70) })) });
-    save(); refreshHud();
+    if (pass) today().qp++;
+    API.send('quest', { quest: q.id, subj: q.subj, got: ok, of: total, pass, practice: !!practice, wrong: wrongList(log) });
+    save(); refreshHud(); checkGoals();
     return { pass, first };
+  }
+  // 약한 단원: 단원마다 5문제 넘게 푼 것 가운데 정답률이 낮은 순서
+  function weakUnits() {
+    if (!st) return [];
+    return QUESTS.map((q) => { const s = st.stats.pools[q.pool]; return s && s.a >= 5 ? { q, a: s.a, c: s.c, acc: s.c / s.a } : null; })
+      .filter(Boolean).sort((x, y) => x.acc - y.acc || y.a - x.a);
+  }
+  const accPct = (pool) => { const s = st.stats.pools[pool]; return s && s.a ? Math.round((s.c / s.a) * 100) : 0; };
+  function startWeak(q) {
+    const before = accPct(q.pool);
+    Quiz.start({ title: '약한 단원 복습', sub: `${q.unit} · ${q.title} · 지금 정답률 ${before}%`, look: q.npc.look, items: drawFrom(q.pool, 10), coin: 3, weak: true,
+      onQuit: (ok, n, log) => API.send('quest', { quest: q.id, subj: q.subj, got: ok, of: n, pass: false, practice: true, kind: 'weak', quit: true, wrong: wrongList(log) }),
+      onEnd: (ok, total, log) => {
+        today().weak++;
+        API.send('quest', { quest: q.id, subj: q.subj, got: ok, of: total, pass: ok >= 8, practice: true, kind: 'weak', wrong: wrongList(log) });
+        save(); refreshHud(); checkGoals();
+        const after = accPct(q.pool);
+        return { pass: true, msg: `${esc(q.title)} 복습 끝! 정답률 ${before}% → <b>${after}%</b><br>${ok >= 8 ? '아주 잘했어요!' : '틀린 문제는 오답 노트에서 한 번 더 확인해 봐요.'}` };
+      } });
   }
   function startFinal() {
     const n = CFG.FINAL_QUESTIONS, per = Math.floor(n / 3), extra = n - per * 3, items = [];
     const subjects = shuffle(['국어', '수학', '사회']);
     subjects.forEach((s, i) => { const k = per + (i < extra ? 1 : 0); const pools = shuffle(SUBJ_POOLS[s]); for (let j = 0; j < k; j++) items.push(drawFrom(pools[j % pools.length], 1)[0]); });
-    Quiz.start({ title: '졸업 시험', sub: `국어·수학·사회 ${n}문제 · ${CFG.FINAL_PASS}문제 이상 통과`, look: PRINCIPAL.look, items: shuffle(items), coin: 10, final: true, retry: startFinal, onEnd: (ok, total, log) => endFinal(ok, total, log) });
+    Quiz.start({ title: '졸업 시험', sub: `국어·수학·사회 ${n}문제 · ${CFG.FINAL_PASS}문제 이상 통과`, look: PRINCIPAL.look, items: shuffle(items), coin: 10, final: true, retry: startFinal,
+      onQuit: (ok, k, log) => API.send('final', { got: ok, of: k, pass: false, quit: true, wrong: wrongList(log) }),
+      onEnd: (ok, total, log) => endFinal(ok, total, log) });
   }
   function endFinal(ok, total, log) {
     st.finalBest = Math.max(st.finalBest || 0, ok);
     const pass = ok >= CFG.FINAL_PASS, first = pass && !st.graduated;
+    today().ft++;
     if (pass) { st.gradCount = (st.gradCount || 0) + 1; today().g++; } // 졸업 횟수: 졸업 시험에 통과할 때마다 1회
     if (first) {
       st.graduated = true; if (!st.owned.includes('grad')) st.owned.push('grad'); st.look.hat = 'grad';
@@ -2950,8 +3148,8 @@ window.PETS_ART = (function () {
       if (!st.pet) { st.pet = 'owl'; resetPet(); }
       addCoins(100, false); Snd.play('badge'); confetti(); confetti();
     }
-    API.send('final', { got: ok, of: total, pass, wrong: log.filter((l) => !l.ok).map((l) => ({ id: l.q.gen ? l.pool + ':자동' : l.q.id, t: plain(l.q.q).slice(0, 70) })) });
-    save(); refreshHud();
+    API.send('final', { got: ok, of: total, pass, wrong: wrongList(log) });
+    save(); refreshHud(); checkGoals();
     return { pass, first };
   }
 
@@ -2961,7 +3159,9 @@ window.PETS_ART = (function () {
     render() {
       const it = this.items[this.i], q = it.q, n = this.items.length;
       if (q.type === 'mc' && !it.order) it.order = shuffle([0, 1, 2, 3]);
-      this.answered = false;
+      ui.modal = 'quiz'; // [그만하기 → 취소]로 돌아왔을 때도 퀴즈 단축키가 되게
+      const was = this.log[this.i] || null; // 이미 답한 문제면 다시 풀 수 없게 답한 모습 그대로 보여 줌
+      this.answered = !!was;
       const dots = this.items.map((x, k) => `<i class="${k < this.log.length ? (this.log[k].ok ? 'ok' : 'no') : k === this.i ? 'on' : ''}"></i>`).join('');
       let body = `<div class="qnum">${POOLS[it.pool].subj} · 문제 ${this.i + 1} / ${n}</div>${q.ref ? `<div class="qref">${BOOK}<span>교과서 <b>${esc(q.ref)}</b></span></div>` : ''}<div class="qtext">${rich(q.q)}</div>`;
       if (q.ctx) body += `<div class="qctx${/<svg/.test(q.ctx) ? ' fig' : ''}">${rich(q.ctx)}</div>`;
@@ -2979,56 +3179,68 @@ window.PETS_ART = (function () {
       $('#sheet').scrollTop = 0;
       $('#sheet').querySelectorAll('.choice').forEach((b) => b.addEventListener('click', () => this.pick(b)));
       const inp = $('#qIn');
-      if (inp) { $('#qGo').addEventListener('click', () => this.pickInput()); inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); if (!this.answered) this.pickInput(); else this.next(); } }); setTimeout(() => { try { inp.focus(); } catch (e) { /* 무시 */ } }, 60); }
+      if (inp) { $('#qGo').addEventListener('click', () => this.pickInput()); inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { if (e.isComposing) return; e.preventDefault(); e.stopPropagation(); if (!this.answered) this.pickInput(); else this.next(); } }); if (!was) setTimeout(() => { try { inp.focus(); } catch (e) { /* 무시 */ } }, 60); }
       $('#qNext').addEventListener('click', () => this.next());
       $('#qQuit').addEventListener('click', () => this.quit());
+      if (was) this.show(was, false);
     },
     pick(btn) {
       if (this.answered) return;
       const it = this.items[this.i], q = it.q; let ok, given;
       if (q.type === 'mc') { const d = +btn.dataset.d, k = it.order[d]; ok = k === q.answer; given = q.choices[k]; }
       else { const v = btn.dataset.v === '1'; ok = v === q.answer; given = v ? 'O' : 'X'; }
-      this.resolve(ok, given, btn);
+      this.resolve(ok, given, btn.dataset.d != null ? btn.dataset.d : btn.dataset.v);
     },
     pickInput() {
       if (this.answered) return;
       const v = ($('#qIn').value || '').trim(); if (!v) { $('#qIn').focus(); return; }
       const q = this.items[this.i].q, ok = q.answer.some((a) => norm(a) === norm(v));
-      $('#qIn').disabled = true; $('#qGo').disabled = true;
       this.resolve(ok, v, null);
     },
-    resolve(ok, given, btn) {
+    resolve(ok, given, pickKey) {
+      if (this.answered || this.log.length > this.i) return; // 한 문제는 한 번만 기록
       this.answered = true;
       const it = this.items[this.i], q = it.q;
-      this.log.push({ ok, q, pool: it.pool, given });
+      const entry = { ok, q, pool: it.pool, given, pick: pickKey };
+      this.log.push(entry);
       if (ok) this.ok++;
       record(q, it.pool, ok, given, this.cfg);
+      this.show(entry, true);
+    },
+    // 답한 결과 보여 주기(처음 답할 때 + 그만하기를 취소하고 돌아왔을 때)
+    show(entry, fresh) {
+      const it = this.items[this.i], q = it.q, ok = entry.ok;
       const btns = $('#sheet').querySelectorAll('.choice');
       btns.forEach((b) => { b.disabled = true; });
-      if (q.type === 'mc') btns.forEach((b) => { const k = it.order[+b.dataset.d]; if (k === q.answer) b.classList.add('ok'); });
-      if (q.type === 'ox') btns.forEach((b) => { if ((b.dataset.v === '1') === q.answer) b.classList.add('ok'); });
-      if (!ok && btn) btn.classList.add('no-pick');
+      if (q.type === 'mc') btns.forEach((b) => { const k = it.order[+b.dataset.d]; if (k === q.answer) b.classList.add('ok'); else if (!ok && b.dataset.d === String(entry.pick)) b.classList.add('no-pick'); });
+      if (q.type === 'ox') btns.forEach((b) => { if ((b.dataset.v === '1') === q.answer) b.classList.add('ok'); else if (!ok && b.dataset.v === String(entry.pick)) b.classList.add('no-pick'); });
+      if ($('#qIn')) { $('#qIn').value = entry.given; $('#qIn').disabled = true; $('#qGo').disabled = true; }
       let right = '';
       if (q.type === 'mc') right = rich(q.choices[q.answer]); else if (q.type === 'ox') right = q.answer ? 'O' : 'X'; else right = esc(q.answer[0]);
-      const head = ok ? pick(['정답이에요!', '딩동댕!', '맞았어요!', '훌륭해요!']) : '아쉬워요!';
+      const head = ok ? (fresh ? pick(['정답이에요!', '딩동댕!', '맞았어요!', '훌륭해요!']) : '정답이에요!') : '아쉬워요!';
       const coin = ok && this.cfg.coin ? ` <small>+${this.cfg.coin} 코인</small>` : '';
       $('#qFeed').innerHTML = `<div class="feed ${ok ? 'good' : 'bad'}"><span class="ft">${head}${coin}</span>${ok ? '' : `정답: <b>${right}</b><br>`}${rich(q.exp)}</div>`;
-      Snd.play(ok ? 'ok' : 'no');
+      if (fresh) Snd.play(ok ? 'ok' : 'no');
       const dots = $('#sheet').querySelectorAll('.qdots i'); if (dots[this.i]) dots[this.i].className = ok ? 'ok' : 'no';
       const nx = $('#qNext'); nx.hidden = false; setTimeout(() => { try { nx.focus({ preventScroll: true }); } catch (e) { /* 무시 */ } }, 30);
-      $('#qFeed').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      $('#qFeed').scrollIntoView({ block: 'nearest', behavior: fresh ? 'smooth' : 'auto' });
     },
     next() { if (!this.answered) return; this.i++; if (this.i >= this.items.length) this.finish(); else this.render(); },
     quit() {
-      if (!this.log.length) { closeSheet(); return; }
-      confirmBox('그만할까요?', '지금까지 푼 문제는 기록되지만, 퀘스트는 통과하지 못해요.', '그만하기', () => { this.done = true; closeSheet(); }, () => this.render());
+      if (!this.log.length) { this.done = true; closeSheet(); return; }
+      confirmBox('그만할까요?', '지금까지 푼 문제와 받은 코인은 저장돼요. 하지만 이번 퀘스트는 통과하지 못해요.', '그만하기', () => {
+        this.done = true; save();
+        if (this.cfg.onQuit) this.cfg.onQuit(this.ok, this.log.length, this.log); // 시트에도 '그만둠'으로 기록
+        closeSheet();
+      }, () => { openSheet('quiz'); this.render(); });
     },
     finish() {
       this.done = true;
       const ok = this.ok, total = this.items.length, res = this.cfg.onEnd ? this.cfg.onEnd(ok, total, this.log) || {} : {};
       const isFinal = this.cfg.final, chest = this.cfg.chest;
       let big = `${ok} / ${total}`, msg = '', extra = '';
-      if (chest) { msg = ok ? '보물상자가 열렸어요! <b>+15 코인</b>' : '상자가 꿈쩍도 안 해요. 다른 문제로 다시 도전해 보세요!'; }
+      if (res.msg) msg = res.msg;
+      else if (chest) { msg = ok ? '보물상자가 열렸어요! <b>+15 코인</b>' : '상자가 꿈쩍도 안 해요. 다른 문제로 다시 도전해 보세요!'; }
       else if (isFinal) {
         msg = res.pass ? (res.first ? '졸업 시험 통과! <b>학사모</b>와 졸업장, 그리고 졸업 기념 펫 <b>황금 부엉이</b>를 받았어요.' : '이번에도 통과! 실력이 탄탄하네요.') : `${CFG.FINAL_PASS}문제 이상 맞혀야 통과예요. 오답 노트로 복습하고 다시 도전해요!`;
       } else if (this.cfg.wrongReview) msg = `오답 ${ok}문제를 바로잡았어요!`;
@@ -3056,8 +3268,11 @@ window.PETS_ART = (function () {
     if (!q.gen) markSeen(pool, q.id);
     if (ok) { if (q.gen) st.genOk[pool] = (st.genOk[pool] || 0) + 1; else st.mastered[q.id] = 1; }
     const i = st.wrong.findIndex((w) => (w.id || (w.q && w.q.id)) === q.id);
-    if (ok) { if (i >= 0) st.wrong.splice(i, 1); if (cfg.coin) addCoins(cfg.coin, true); }
-    else {
+    if (ok) {
+      if (i >= 0) { st.wrong.splice(i, 1); td.fix++; } // 오답 노트에 있던 문제를 맞힘 = 오답 고치기
+      const sj = POOLS[pool] && POOLS[pool].subj; if (sj) td.sc[sj] = (td.sc[sj] || 0) + 1;
+      if (cfg.coin) addCoins(cfg.coin, true);
+    } else {
       const e = { id: q.id, pool, at: Date.now() };
       if (q.gen) e.q = q; // 자동으로 만든 문제만 통째로 저장
       if (q.type === 'mc') e.gk = q.choices.indexOf(given); else e.given = String(given);
@@ -3065,7 +3280,8 @@ window.PETS_ART = (function () {
       st.wrong.unshift(e);
       let g = 0; st.wrong = st.wrong.filter((w) => !(w.q && w.q.gen) || ++g <= 15).slice(0, 60);
     }
-    refreshHud();
+    dirty = true;
+    refreshHud(); save(); checkGoals(); // 문제를 풀 때마다 저장 → 중간에 창을 닫아도 남음
   }
   function addCoins(n, quiet) { st.coins += n; st.earned = (st.earned || 0) + n; if (n > 0) today().coins += n; refreshHud(); if (!quiet) toast(`+${n} 코인`, 'gold'); Snd.play('coin'); fx.push({ kind: 'text', text: `+${n}`, x: player.x, y: player.y - 54, vy: -30, life: 1.2 }); }
   function confetti() { for (let i = 0; i < 40; i++) fx.push({ kind: 'conf', x: player.x + (Math.random() - 0.5) * 20, y: player.y - 40, vx: (Math.random() - 0.5) * 220, vy: -160 - Math.random() * 140, g: 380, life: 1.6 + Math.random() * 0.6, color: pick(['#ffc23d', '#ff6b4a', '#18a88f', '#2f8fd0', '#8e6cf0', '#ff86a8']) }); }
@@ -3074,7 +3290,7 @@ window.PETS_ART = (function () {
   function openChest(th) {
     if (st.chests[th.id]) { toast('이미 연 보물상자예요.'); return; }
     const pool = pick(th.pools);
-    Quiz.start({ title: '보물상자', sub: `${POOLS[pool].subj} 문제 하나를 맞히면 열려요`, look: st.look, items: drawFrom(pool, 1), coin: 0, chest: true, onEnd: (ok) => { if (ok) { st.chests[th.id] = true; addCoins(15, true); confetti(); save(); } return { pass: !!ok }; } });
+    Quiz.start({ title: '보물상자', sub: `${POOLS[pool].subj} 문제 하나를 맞히면 열려요`, look: st.look, items: drawFrom(pool, 1), coin: 0, chest: true, onEnd: (ok) => { if (ok) { st.chests[th.id] = true; today().chest++; addCoins(15, true); confetti(); save(); checkGoals(); } return { pass: !!ok }; } });
   }
   function readSign(th) {
     const first = !st.signs[th.id];
@@ -3082,7 +3298,9 @@ window.PETS_ART = (function () {
     const q = QMAP[th.quest];
     $('#sheet').innerHTML = `<div class="shead"><div><h2>지식 표지판</h2><p>${esc(q ? q.unit + ' · ' + q.title : '')}</p></div><button class="x" id="sx" aria-label="닫기">×</button></div><div class="sbody signcard"><h3>${esc(th.sign.title)}</h3><div>${rich(th.sign.text)}</div>${first ? '<p style="font-size:15px;color:var(--mint)">처음 읽은 표지판이에요! +2 코인</p>' : ''}</div><div class="sfoot"><button class="btn primary" id="sok">확인</button></div>`;
     $('#sx').addEventListener('click', closeSheet); $('#sok').addEventListener('click', closeSheet);
-    if (first) { st.signs[th.id] = true; addCoins(2, true); save(); }
+    today().sg[th.id] = 1; // 오늘의 목표: 오늘 읽은 표지판(다시 읽어도 돼요)
+    if (first) { st.signs[th.id] = true; addCoins(2, true); }
+    save(); checkGoals();
   }
 
   /* ===================== 대화창 ===================== */
@@ -3104,8 +3322,10 @@ window.PETS_ART = (function () {
   function closeSheet() { ui.modal = null; $('#modal').hidden = true; $('#modal').classList.remove('top'); $('#sheet').innerHTML = ''; $('#sheet').classList.remove('wide'); renderPrompt(); refreshHud(); try { cv.focus(); } catch (e) { /* 무시 */ } }
   function head(title, sub) { return `<div class="shead"><div><h2>${title}</h2>${sub ? `<p>${sub}</p>` : ''}</div><button class="x" id="sx" aria-label="닫기">×</button></div>`; }
   function bindClose() { const x = $('#sx'); if (x) x.addEventListener('click', closeSheet); }
+  let confirmCancel = null; // Esc를 누르면 [취소]와 똑같이
   function confirmBox(title, text, okLabel, onOk, onCancel) {
     openSheet('confirm');
+    confirmCancel = onCancel || null;
     $('#sheet').innerHTML = `<div class="shead"><div><h2>${esc(title)}</h2></div></div><div class="sbody" style="font-size:17px;line-height:1.6">${text}</div><div class="sfoot"><button class="btn ghost" id="cNo">취소</button><button class="btn primary" id="cYes">${esc(okLabel)}</button></div>`;
     $('#cNo').addEventListener('click', () => { if (onCancel) onCancel(); else closeSheet(); });
     $('#cYes').addEventListener('click', () => onOk());
@@ -3115,7 +3335,12 @@ window.PETS_ART = (function () {
     openSheet('quests');
     const subjAcc = (s) => { let a = 0, c = 0; for (const p of SUBJ_POOLS[s]) { const v = st.stats.pools[p]; if (v) { a += v.a; c += v.c; } } return a ? Math.round((c / a) * 100) + '%' : '-'; };
     let html = head('퀘스트 목록', `메달 ${badgeCount()} / ${QUESTS.length} · 따라갈 퀘스트를 누르면 노란 화살표가 길을 안내해요`) + '<div class="sbody">';
-    html += `<div class="stats"><div class="stat"><b>${st.stats.a}</b><span>푼 문제</span></div><div class="stat"><b>${st.stats.a ? Math.round((st.stats.c / st.stats.a) * 100) : 0}%</b><span>정답률</span></div><div class="stat"><b>${st.wrong.length}</b><span>오답 노트</span></div></div><div class="qlist">`;
+    html += `<div class="stats"><div class="stat"><b>${st.stats.a}</b><span>푼 문제</span></div><div class="stat"><b>${st.stats.a ? Math.round((st.stats.c / st.stats.a) * 100) : 0}%</b><span>정답률</span></div><div class="stat"><b>${st.wrong.length}</b><span>오답 노트</span></div></div>`;
+    // 약한 단원 복습
+    const wk = weakUnits().slice(0, 3);
+    html += `<div class="weakbox"><div class="wkh"><b>약한 단원</b><span>${wk.length ? '정답률이 낮은 단원부터 보여 줘요' : '단원마다 문제를 5개 넘게 풀면 정답률이 낮은 단원을 찾아 줘요'}</span></div>`;
+    if (wk.length) html += wk.map((w) => `<div class="wkrow"><span class="wkn">${esc(w.q.subj)} · ${esc(w.q.title)}</span><div class="bar"><i style="width:${Math.round(w.acc * 100)}%"></i></div><b>${Math.round(w.acc * 100)}%</b></div>`).join('') + `<button class="btn sun" id="wkGo">${esc(wk[0].q.title)} 복습하기 <small>(10문제 · 맞히면 +3 코인)</small></button>`;
+    html += '</div><div class="qlist">';
     for (const s of ['국어', '수학', '사회']) {
       html += `<div class="subj"><h3>${s} <span class="pill">정답률 ${subjAcc(s)}</span></h3>`;
       for (const q of QUESTS.filter((x) => x.subj === s)) {
@@ -3124,8 +3349,10 @@ window.PETS_ART = (function () {
       }
       html += '</div>';
     }
-    html += '</div></div><div class="sfoot"><button class="btn primary" id="qc">닫기</button></div>';
+    html += `</div></div><div class="sfoot">${st.graduated ? '<button class="btn sun" id="qCert">졸업장 보기</button>' : ''}<button class="btn primary" id="qc">닫기</button></div>`;
     $('#sheet').innerHTML = html; bindClose(); $('#qc').addEventListener('click', closeSheet);
+    if ($('#qCert')) $('#qCert').addEventListener('click', openCert);
+    if ($('#wkGo')) $('#wkGo').addEventListener('click', () => startWeak(wk[0].q));
     $('#sheet').querySelectorAll('.qrow').forEach((r) => r.addEventListener('click', () => { st.track = st.track === r.dataset.q ? null : r.dataset.q; save(); refreshTrack(); openQuests(); }));
   }
   function openWrong() {
@@ -3134,9 +3361,10 @@ window.PETS_ART = (function () {
     if (!st.wrong.length) html += '<div class="empty">오답 노트가 비어 있어요.<br>틀린 문제가 생기면 여기에 모여요!</div>';
     else for (const w of st.wrong.slice(0, 40)) {
       const q = wq(w); if (!q) continue;
-      const ans = q.type === 'mc' ? q.choices[q.answer] : q.type === 'ox' ? (q.answer ? 'O' : 'X') : q.answer[0];
-      const mine = q.type === 'mc' && w.gk >= 0 ? q.choices[w.gk] : w.given;
-      html += `<div class="wrong"><div class="wt">${esc(POOLS[w.pool] ? POOLS[w.pool].subj + ' · ' + POOLS[w.pool].title : '')}</div><div class="wq">${rich(q.q)}</div>${q.ctx ? `<div class="wc">${rich(q.ctx)}</div>` : ''}<div class="wm">내 답: ${rich(mine == null ? '' : mine)}</div><div class="wa">정답: ${rich(ans)}</div><div>${rich(q.exp)}</div></div>`;
+      const ans = q.type === 'mc' ? rich(q.choices[q.answer]) : q.type === 'ox' ? (q.answer ? 'O' : 'X') : esc(q.answer[0]);
+      // 내 답: 객관식은 문제은행의 보기, 직접 쓴 답은 글자 그대로(기호를 화면 코드로 해석하지 않게)
+      const mine = q.type === 'mc' ? (w.gk >= 0 ? rich(q.choices[w.gk]) : '') : esc(w.given == null ? '' : w.given);
+      html += `<div class="wrong"><div class="wt">${esc(POOLS[w.pool] ? POOLS[w.pool].subj + ' · ' + POOLS[w.pool].title : '')}</div>${q.ref ? `<div class="qref">${BOOK}<span>교과서 <b>${esc(q.ref)}</b></span></div>` : ''}<div class="wq">${rich(q.q)}</div>${q.ctx ? `<div class="wc">${rich(q.ctx)}</div>` : ''}<div class="wm">내 답: ${mine}</div><div class="wa">정답: ${ans}</div><div>${rich(q.exp)}</div></div>`;
     }
     html += '</div><div class="sfoot">' + (st.wrong.length ? `<button class="btn sun" id="wRe">오답 다시 풀기 (${Math.min(10, st.wrong.length)}문제)</button>` : '') + '<button class="btn primary" id="wc">닫기</button></div>';
     $('#sheet').innerHTML = html; bindClose(); $('#wc').addEventListener('click', closeSheet);
@@ -3318,9 +3546,10 @@ window.PETS_ART = (function () {
       <div class="row"><div><b>화면 크기</b><span>세상을 크게 또는 넓게 봐요</span></div><div style="display:flex;gap:6px"><button class="btn small" id="sZo">넓게</button><button class="btn small" id="sZi">크게</button></div></div>
       <div class="row"><div><b>캐릭터 꾸미기</b><span>피부·머리·옷 색깔</span></div><button class="btn small" id="sLook">꾸미기</button></div>
       <div class="row"><div><b>기록 저장</b><span>${apiTxt}</span></div>${API.on() ? '<button class="btn small" id="sSync">지금 보내기</button>' : ''}</div>
+      ${st.graduated ? '<div class="row"><div><b>졸업장</b><span>다시 보거나 인쇄할 수 있어요</span></div><button class="btn small sun" id="sCert">보기</button></div>' : ''}
       <div class="row"><div><b>다른 친구로 바꾸기</b><span>함께 쓰는 기기에서 사용해요 (기록은 저장돼요)</span></div><button class="btn small" id="sSwitch">처음 화면</button></div>
       <div class="row"><div><b>처음부터 다시 하기</b><span>이 기기에 저장된 내 기록을 지워요</span></div><button class="btn small" id="sReset" style="color:var(--berry)">지우기</button></div>
-      <div class="help"><b>조작 방법</b><br><kbd>방향키</kbd>·<kbd>WASD</kbd> 이동 · <kbd>스페이스</kbd> 말 걸기 · 화면 누르기: 그곳으로 걷기<br><kbd>Q</kbd> 퀘스트 · <kbd>N</kbd> 오답 노트 · <kbd>M</kbd> 지도 · <kbd>L</kbd> 명예의 전당 · 문제 풀 때 <kbd>1</kbd>~<kbd>4</kbd>, <kbd>O</kbd>/<kbd>X</kbd></div>
+      <div class="help"><b>조작 방법</b><br><kbd>방향키</kbd>·<kbd>WASD</kbd> 이동 · <kbd>스페이스</kbd> 말 걸기 · 화면 누르기: 그곳으로 걷기<br><kbd>Q</kbd> 퀘스트 · <kbd>N</kbd> 오답 노트 · <kbd>M</kbd> 지도 · <kbd>L</kbd> 명예의 전당 · <kbd>G</kbd> 오늘의 목표 · 문제 풀 때 <kbd>1</kbd>~<kbd>4</kbd>, <kbd>O</kbd>/<kbd>X</kbd></div>
     </div><div class="sfoot"><button class="btn primary" id="sc">닫기</button></div>`;
     bindClose(); $('#sc').addEventListener('click', closeSheet);
     $('#sSnd').addEventListener('click', () => { st.sound = !st.sound; Snd.init(); save(); openSettings(); });
@@ -3328,6 +3557,7 @@ window.PETS_ART = (function () {
     $('#sZo').addEventListener('click', () => { zoomMul = clamp(zoomMul / 1.2, 0.55, 1.8); resize(); });
     $('#sZi').addEventListener('click', () => { zoomMul = clamp(zoomMul * 1.2, 0.55, 1.8); resize(); });
     $('#sLook').addEventListener('click', openLook);
+    if ($('#sCert')) $('#sCert').addEventListener('click', openCert);
     if ($('#sSync')) $('#sSync').addEventListener('click', () => { API.send('sync'); toast('기록을 보냈어요!', 'good'); });
     $('#sSwitch').addEventListener('click', () => { save(); closeSheet(); toTitle(); });
     $('#sReset').addEventListener('click', () => confirmBox('정말 지울까요?', `<b>${esc(st.name)}</b>의 메달·코인·오답 노트가 이 기기에서 모두 지워져요.`, '모두 지우기', () => { LS.del(KEY + ':p:' + st.key); LS.set(KEY + ':players', (LS.get(KEY + ':players') || []).filter((p) => p.key !== st.key)); closeSheet(); st = null; toTitle(); }));
@@ -3337,7 +3567,76 @@ window.PETS_ART = (function () {
     const d = new Date(), date = `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
     $('#sheet').innerHTML = head('졸업장', '') + `<div class="sbody"><div class="cert"><h2>졸 업 장</h2><div class="who">${esc(st.name)}</div><div style="color:var(--ink-soft)">6학년 ${esc(st.cls)}반 ${esc(st.num)}번</div><p>위 학생은 지식의 섬 대모험에서 국어·수학·사회 퀘스트 ${QUESTS.length}개를 모두 해결하고 졸업 시험을 훌륭하게 통과하였기에 이 졸업장을 드립니다.</p><div class="badges">${QUESTS.map((q) => badgeSVG(q, true)).join('')}</div><p style="font-size:15px">졸업 시험 최고 기록 ${st.finalBest} / ${CFG.FINAL_QUESTIONS} · 푼 문제 ${st.stats.a}개 · 정답률 ${st.stats.a ? Math.round((st.stats.c / st.stats.a) * 100) : 0}%</p><div class="sig">${date}<br>지식의 섬 교장</div></div></div><div class="sfoot"><button class="btn" id="cPrint">인쇄하기</button><button class="btn primary" id="cc">닫기</button></div>`;
     bindClose(); $('#cc').addEventListener('click', closeSheet);
-    $('#cPrint').addEventListener('click', () => { try { window.print(); } catch (e) { toast('이 화면에서는 인쇄할 수 없어요. 화면을 캡처해 주세요.'); } });
+    // 인쇄할 때는 졸업장만 A4 한 장에(게임 화면·버튼은 빼고)
+    $('#cPrint').addEventListener('click', () => {
+      document.body.classList.add('print-cert');
+      try { window.print(); } catch (e) { toast('이 화면에서는 인쇄할 수 없어요. 화면을 캡처해 주세요.'); }
+      setTimeout(() => { if (!printing) document.body.classList.remove('print-cert'); }, 800);
+    });
+  }
+  let printing = false;
+  window.addEventListener('beforeprint', () => { printing = true; });
+  window.addEventListener('afterprint', () => { printing = false; document.body.classList.remove('print-cert'); });
+
+  /* ===================== 오늘의 목표(매일 밤 12시에 새로) ===================== */
+  const GOAL_COIN = 20, GOAL_BONUS = 30;
+  const GOALS = [
+    // cat 0: 문제 풀기 · 1: 과목 · 2: 특별 목표 — 날마다 하나씩 골라 3개
+    { id: 'solve', cat: 0, n: 15, text: '문제 15개 풀기', get: (t) => t.a },
+    { id: 'correct', cat: 0, n: 10, text: '문제 10개 맞히기', get: (t) => t.c },
+    { id: 'kor', cat: 1, n: 5, text: '국어 문제 5개 맞히기', get: (t) => t.sc['국어'] || 0 },
+    { id: 'math', cat: 1, n: 5, text: '수학 문제 5개 맞히기', get: (t) => t.sc['수학'] || 0 },
+    { id: 'soc', cat: 1, n: 5, text: '사회 문제 5개 맞히기', get: (t) => t.sc['사회'] || 0 },
+    { id: 'fix', cat: 2, n: 3, text: '오답 노트 문제 3개 고치기', get: (t) => t.fix, can: () => st.wrong.length >= 3 },
+    { id: 'weak', cat: 2, n: 1, text: '약한 단원 복습 1번 하기', get: (t) => t.weak, can: () => weakUnits().length > 0 },
+    { id: 'sign', cat: 2, n: 2, text: '지식 표지판 2개 읽기 (다시 읽어도 돼요)', get: (t) => Object.keys(t.sg).length },
+    { id: 'quest', cat: 2, n: 1, text: '퀘스트 1번 통과하기 (복습도 돼요)', get: (t) => t.qp },
+    { id: 'chest', cat: 2, n: 1, text: '보물상자 1개 열기', get: (t) => t.chest, can: () => things.some((x) => x.type === 'chest' && !st.chests[x.id]) },
+    { id: 'final', cat: 2, n: 1, text: '졸업 시험 한 번 보기', get: (t) => t.ft, can: () => badgeCount() >= QUESTS.length }
+  ];
+  const GMAP = {}; GOALS.forEach((g) => { GMAP[g.id] = g; });
+  function seeded(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return () => { h ^= h << 13; h ^= h >>> 17; h ^= h << 5; return (h >>> 0) / 4294967296; }; }
+  function goalsToday() {
+    const t = today();
+    if (!t.goals) { // 그날 처음 볼 때 정하고 하루 동안 그대로
+      const r = seeded(t.d + '|' + st.key);
+      t.goals = [0, 1, 2].map((cat) => { const c = GOALS.filter((g) => g.cat === cat && (!g.can || g.can())); return c[Math.floor(r() * c.length)].id; });
+    }
+    return t.goals.map((id) => GMAP[id]).filter(Boolean);
+  }
+  function checkGoals() {
+    if (!st || mode !== 'play') return;
+    const t = today(), gs = goalsToday(); let changed = false;
+    gs.forEach((g, k) => {
+      if (t.gdone[g.id] || g.get(t) < g.n) return;
+      t.gdone[g.id] = 1; changed = true; addCoins(GOAL_COIN, true);
+      setTimeout(() => toast(`<b>오늘의 목표 달성!</b> ${esc(g.text.replace(/ \(.*\)$/, ''))} +${GOAL_COIN} 코인`, 'gold'), 300 + k * 150);
+    });
+    if (!t.gb && gs.length && gs.every((g) => t.gdone[g.id])) {
+      t.gb = true; changed = true; addCoins(GOAL_BONUS, true);
+      setTimeout(() => { toast(`<b>오늘의 목표를 모두 해냈어요!</b> 보너스 +${GOAL_BONUS} 코인`, 'gold'); confetti(); Snd.play('badge'); }, 900);
+    }
+    if (changed) save();
+    refreshGoalChip();
+  }
+  function refreshGoalChip() {
+    if (!st) return;
+    const t = today(), gs = goalsToday(), n = gs.filter((g) => t.gdone[g.id]).length;
+    $('#hudGoalN').textContent = `${n}/${gs.length}`;
+    $('#hudGoal').classList.toggle('done', n === gs.length);
+  }
+  function openGoals() {
+    openSheet('goals');
+    const t = today(), gs = goalsToday();
+    let html = head('오늘의 목표', `하나 해낼 때마다 +${GOAL_COIN} 코인 · 매일 밤 12시에 새 목표가 나와요`) + '<div class="sbody"><div class="goals">';
+    for (const g of gs) {
+      const v = Math.min(g.n, g.get(t)), done = !!t.gdone[g.id];
+      const act = done ? '' : g.id === 'fix' ? '<button class="btn small" data-ga="fix">오답 노트</button>' : g.id === 'weak' ? '<button class="btn small sun" data-ga="weak">복습 시작</button>' : g.id === 'quest' ? '<button class="btn small" data-ga="quests">퀘스트 목록</button>' : '';
+      html += `<div class="gitem${done ? ' done' : ''}"><span class="gck" aria-hidden="true">${done ? '✓' : ''}</span><div class="gi"><b>${esc(g.text)}</b><div class="bar"><i style="width:${Math.round((v / g.n) * 100)}%"></i></div></div><span class="gn">${v} / ${g.n}</span>${act}</div>`;
+    }
+    html += `</div><p class="gbonus${t.gb ? ' done' : ''}">${t.gb ? '오늘의 목표를 모두 해냈어요! 보너스 코인을 받았어요.' : `세 가지를 모두 해내면 보너스 <b>+${GOAL_BONUS} 코인</b>!`}</p></div><div class="sfoot"><button class="btn primary" id="gc">닫기</button></div>`;
+    $('#sheet').innerHTML = html; bindClose(); $('#gc').addEventListener('click', closeSheet);
+    $('#sheet').querySelectorAll('[data-ga]').forEach((b) => b.addEventListener('click', () => { const a = b.dataset.ga; if (a === 'fix') openWrong(); else if (a === 'quests') openQuests(); else { const w = weakUnits()[0]; if (w) startWeak(w.q); } }));
   }
 
   /* ===================== HUD·알림 ===================== */
@@ -3354,13 +3653,14 @@ window.PETS_ART = (function () {
     $('#hudName').textContent = st.name; $('#hudCoins').textContent = st.coins; $('#hudBadges').textContent = `${badgeCount()}/${QUESTS.length}`;
     portrait($('#hudFace'), st.look, 'face');
     $('#wrongDot').hidden = !st.wrong.length;
+    refreshGoalChip();
     refreshTrack();
   }
   function refreshTrack() {
     const box = $('#questTrack'); if (!st || mode !== 'play') { box.hidden = true; return; }
     const g = guideTarget();
     box.hidden = false;
-    box.innerHTML = g ? (g.q ? `<b>다음 목표</b>${esc(g.q.npc.name)} · ${esc(g.q.unit)}<br><span style="color:var(--ink-soft)">${esc(g.q.title)}</span>` : `<b>다음 목표</b>${esc(g.name)}에서 졸업 시험!`) : '<b>졸업 완료!</b>복습하며 코인을 모아 보세요.';
+    box.innerHTML = g ? (g.q ? `<b>다음 목표</b>${esc(g.q.npc.name)} · ${esc(g.q.unit)}<br><span style="color:var(--ink-soft)">${esc(g.q.title)}</span>` : `<b>다음 목표</b>${esc(g.name)}에서 졸업 시험!`) : '<b>졸업 완료!</b>졸업의 문에서 시험을 다시 보면 졸업 횟수가 올라가요.';
   }
   function renderPrompt() {
     const p = $('#prompt'), ab = $('#actBtn'), th = ui.near;
@@ -3379,7 +3679,8 @@ window.PETS_ART = (function () {
       if (e.code === 'KeyO' || e.code === 'KeyX') { const b = $('#sheet').querySelector(`.choice[data-v="${e.code === 'KeyO' ? 1 : 0}"]`); if (b) { e.preventDefault(); Quiz.pick(b); } return; }
       if ((e.code === 'Enter' || e.code === 'Space') && Quiz.answered && document.activeElement !== $('#qNext')) { e.preventDefault(); Quiz.next(); return; }
     }
-    if (e.code === 'Escape') { if (ui.modal === 'teacher') return; if (ui.modal === 'confirm' && mode === 'teacher') { openTeacher(); return; } if (ui.modal === 'quiz' && !Quiz.done) Quiz.quit(); else if (ui.modal) closeSheet(); else if (ui.dialog) Dlg.close(); return; }
+    if (e.code === 'Escape') { if (ui.modal === 'teacher') return; if (ui.modal === 'confirm' && mode === 'teacher') { openTeacher(); return; } if (ui.modal === 'confirm' && confirmCancel) { const c = confirmCancel; confirmCancel = null; c(); return; } if (ui.modal === 'quiz' && !Quiz.done) Quiz.quit(); else if (ui.modal) closeSheet(); else if (ui.dialog) Dlg.close(); return; }
+    if (e.code === 'KeyG' && mode === 'play' && !ui.modal && !ui.dialog) { openGoals(); return; }
     if (ui.dialog && (e.code === 'Space' || e.code === 'Enter')) { if (document.activeElement && document.activeElement.tagName === 'BUTTON' && $('#dialog').contains(document.activeElement)) return; e.preventDefault(); if (Dlg.i < Dlg.lines.length - 1) Dlg.next(); return; }
     if (mode !== 'play' || ui.modal) return;
     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
@@ -3419,6 +3720,7 @@ window.PETS_ART = (function () {
   $('#tSet').addEventListener('click', () => !busy() && openSettings());
   mm.addEventListener('click', () => !busy() && openMap());
   $('#questTrack').addEventListener('click', () => !busy() && openQuests());
+  $('#hudGoal').addEventListener('click', () => !busy() && openGoals());
   $('#modal').addEventListener('pointerdown', (e) => { if (e.target === $('#modal') && ui.modal && !['quiz', 'confirm', 'teacher', 'reset'].includes(ui.modal)) closeSheet(); });
 
   /* ===================== 공지·계정 확인(학생 게임이 30초마다) ===================== */
@@ -3462,7 +3764,7 @@ window.PETS_ART = (function () {
     LS.del(KEY + ':p:' + key);
     LS.set(KEY + ':players', (LS.get(KEY + ':players') || []).filter((x) => x.key !== key));
     Quiz.done = true; ui.modal = null; ui.dialog = false; $('#modal').hidden = true; $('#sheet').innerHTML = ''; $('#dialog').hidden = true;
-    st = null; Poll.stop();
+    releaseTab(); st = null; Poll.stop();
     toTitle();
     setErr(`<div class="tconfirm"><b>선생님이 ${who} 계정을 초기화했어요.</b><br>반·번호·이름을 다시 쓰고 처음부터 새로 시작해요.</div>`);
     setTimeout(() => { try { $('#tErr').scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) { /* 무시 */ } }, 50);
@@ -3505,6 +3807,7 @@ window.PETS_ART = (function () {
       if (mode === 'play') return !ui.modal && !ui.dialog;
       if (mode === 'title') return !ui.modal && !draftTouched && !$('#inName').value && !$('#inCls').value && !$('#inNum').value;
       if (mode === 'teacher') return ui.modal === 'teacher' && !T.drafting() && !T.busy;
+      if (mode === 'locked') return true; // 멈춘 창은 바로 새 버전으로(다시 열면 시작 화면)
       return false;
     },
     // 2.5초 동안 계속 '쉬는 순간'일 때만 바꿈(퀴즈 끝 → 다음 대화 사이에 끼어들지 않게)
@@ -3603,7 +3906,7 @@ window.PETS_ART = (function () {
   function targetName(t) { return t === 'all' ? '6학년 전체' : `6학년 ${t}반`; }
   function openTeacher() {
     openSheet('teacher'); $('#sheet').classList.add('wide');
-    const tabs = `<div class="tabs" role="tablist"><button class="tab${T.tab === 'notice' ? ' on' : ''}" data-tt="notice" role="tab">공지 보내기</button><button class="tab${T.tab === 'status' ? ' on' : ''}" data-tt="status" role="tab">반 현황</button></div>`;
+    const tabs = `<div class="tabs" role="tablist"><button class="tab${T.tab === 'notice' ? ' on' : ''}" data-tt="notice" role="tab">공지 보내기</button><button class="tab${T.tab === 'status' ? ' on' : ''}" data-tt="status" role="tab">반 현황</button><button class="tab${T.tab === 'device' ? ' on' : ''}" data-tt="device" role="tab">이 기기</button></div>`;
     let body;
     if (T.tab === 'notice') {
       const nums = Array.from(new Set(T.classes.map((c) => c.cls).concat(Array.from({ length: 10 }, (_, i) => i + 1)))).sort((a, b) => a - b);
@@ -3613,12 +3916,15 @@ window.PETS_ART = (function () {
         <div class="field full"><label for="tNoticeText">공지 내용 <small id="tCount">${T.draft.length}/80</small></label><textarea id="tNoticeText" maxlength="80" rows="2" placeholder="예: 10분 뒤에 마칩니다. 하던 퀘스트를 마무리해요!">${esc(T.draft)}</textarea></div>
         <div class="tsend full"><button class="btn primary" id="tSend">공지 보내기</button><span id="tSendMsg" class="rnote"></span></div>
       </div><h3 class="th3">지금 떠 있는 공지</h3><div id="tNoticeList"></div><p class="rnote">학생 화면에는 30초 안에 위쪽 띠로 떠요. 정한 시간이 지나면 저절로 사라져요.</p>`;
+    } else if (T.tab === 'device') {
+      body = '<div id="tDevice"></div>';
     } else {
-      body = `<div class="trow" id="tClassChips"></div><div id="tStatusBody"></div><p class="rnote">초록 점은 지금 게임을 하고 있는 학생이에요. 30초마다 자동으로 새로고침돼요.</p>`;
+      body = `<div class="trow" id="tClassChips"></div><div id="tStatusBody"></div><p class="rnote">초록 점은 지금 게임을 하고 있는 학생이에요. 이름을 누르면 단원별 정답률과 자주 틀린 문제를 볼 수 있어요. 30초마다 자동으로 새로고침돼요.</p>`;
     }
     $('#sheet').innerHTML = `<div class="shead"><div><h2>선생님 모드</h2><p>6학년 · 공지 보내기 · 반 현황 · 학생 계정 삭제</p></div><button class="btn small" id="tExit">나가기</button></div>${tabs}<div class="sbody">${body}</div>`;
     $('#tExit').addEventListener('click', exitTeacher);
-    $('#sheet').querySelectorAll('[data-tt]').forEach((b) => b.addEventListener('click', () => { T.tab = b.dataset.tt; openTeacher(); if (T.tab === 'status') { T.students = null; drawStatus(); loadStatus(); } }));
+    $('#sheet').querySelectorAll('[data-tt]').forEach((b) => b.addEventListener('click', () => { T.tab = b.dataset.tt; T.detail = null; T.detailData = null; openTeacher(); if (T.tab === 'status') { T.students = null; drawStatus(); loadStatus(); } }));
+    if (T.tab === 'device') { drawDevice(); return; }
     if (T.tab === 'notice') {
       drawNoticeList();
       const ta = $('#tNoticeText');
@@ -3650,11 +3956,13 @@ window.PETS_ART = (function () {
   function drawClassChips() {
     const box = $('#tClassChips'); if (!box) return;
     box.innerHTML = (T.classes.length ? T.classes.map((c) => `<button class="swt${T.cls === c.cls ? ' on' : ''}" data-cls="${c.cls}">${c.cls}반 <small>${c.count}명</small></button>`).join('') : '<span class="rnote">아직 기록된 반이 없어요.</span>') + '<button class="btn small" id="tReload">새로고침</button>';
-    box.querySelectorAll('[data-cls]').forEach((b) => b.addEventListener('click', () => { T.cls = +b.dataset.cls; LS.set(KEY + ':tcls', T.cls); T.students = null; drawClassChips(); drawStatus(); loadStatus(); }));
+    box.querySelectorAll('[data-cls]').forEach((b) => b.addEventListener('click', () => { T.cls = +b.dataset.cls; LS.set(KEY + ':tcls', T.cls); T.students = null; T.detail = null; T.detailData = null; drawClassChips(); drawStatus(); loadStatus(); }));
     $('#tReload').addEventListener('click', () => { loadOverview(); loadStatus(); });
   }
   function drawStatus() {
     const box = $('#tStatusBody'); if (!box) return;
+    if (T.detail) { drawStudent(); return; } // 학생 한 명을 자세히 보는 중이면 그 화면 유지
+    const chips = $('#tClassChips'); if (chips) chips.hidden = false;
     const d = T.students;
     if (!T.cls) { box.innerHTML = '<div class="empty">아직 기록이 없어요. 학생들이 게임을 시작하면 여기에 반이 생겨요.</div>'; return; }
     if (!d) { box.innerHTML = '<div class="empty">불러오는 중…</div>'; return; }
@@ -3662,8 +3970,76 @@ window.PETS_ART = (function () {
     const on = d.filter((x) => x.online).length, grads = d.filter((x) => x.grad).length, played = d.filter((x) => x.today > 0);
     const avg = played.length ? Math.round(played.reduce((a, x) => a + x.today, 0) / played.length) : 0;
     box.innerHTML = `<div class="tsum"><span>전체 <b>${d.length}</b>명</span><span>오늘 참여 <b>${played.length}</b>명</span><span>지금 접속 <b>${on}</b>명</span><span>졸업 <b>${grads}</b>명</span><span>오늘 평균 <b>${fmt(avg)}</b>점</span><span class="rnote">마지막 갱신 ${clock(T.statusAt || Date.now())}</span></div>
-      <div class="twrap"><table class="rank tstat"><thead><tr><th>번호</th><th>이름</th><th>오늘 점수</th><th>총 메달</th><th>졸업</th><th>남은 오답</th><th>정답률</th><th>마지막 접속</th><th></th></tr></thead><tbody>${d.map((x) => `<tr><td>${x.num}번</td><td class="nm"><span class="dot${x.online ? ' on' : ''}"></span>${esc(x.name)}</td><td>${x.today ? `<b>${fmt(x.today)}</b>` : '<span class="dim">-</span>'}</td><td>${x.medals}개</td><td>${(x.grads || (x.grad ? 1 : 0)) ? `🎓 ${x.grads || 1}회` : '<span class="dim">-</span>'}</td><td>${x.wrongLeft}</td><td>${x.solved ? Math.round(x.acc * 100) + '%' : '-'}</td><td>${x.online ? '<span class="live">접속 중</span>' : ago(Math.max(x.seen || 0, x.updated || 0) + (T.skew || 0))}</td><td><button class="btn small ghost danger" data-del="${esc(x.key)}" data-who="${esc(x.num + '번 ' + x.name)}">삭제</button></td></tr>`).join('')}</tbody></table></div>`;
+      <div class="twrap"><table class="rank tstat"><thead><tr><th>번호</th><th>이름</th><th>오늘 점수</th><th>총 메달</th><th>졸업</th><th>남은 오답</th><th>정답률</th><th>마지막 접속</th><th></th></tr></thead><tbody>${d.map((x) => `<tr><td>${x.num}번</td><td class="nm"><span class="dot${x.online ? ' on' : ''}"></span><button class="linkbtn" data-stu="${esc(x.key)}" title="자세히 보기">${esc(x.name)}</button></td><td>${x.today ? `<b>${fmt(x.today)}</b>` : '<span class="dim">-</span>'}</td><td>${x.medals}개</td><td>${(x.grads || (x.grad ? 1 : 0)) ? `🎓 ${x.grads || 1}회` : '<span class="dim">-</span>'}</td><td>${x.wrongLeft}</td><td>${x.solved ? Math.round(x.acc * 100) + '%' : '-'}</td><td>${x.online ? '<span class="live">접속 중</span>' : ago(Math.max(x.seen || 0, x.updated || 0) + (T.skew || 0))}</td><td><button class="btn small ghost danger" data-del="${esc(x.key)}" data-who="${esc(x.num + '번 ' + x.name)}">삭제</button></td></tr>`).join('')}</tbody></table></div>`;
     box.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', () => deleteStudent(b.dataset.del, b.dataset.who)));
+    box.querySelectorAll('[data-stu]').forEach((b) => b.addEventListener('click', () => { T.detail = b.dataset.stu; T.detailData = null; drawStudent(); loadStudent(T.detail); }));
+  }
+  // 학생 한 명 자세히: 단원별 정답률 + 자주 틀린 문제
+  function loadStudent(key) {
+    API.teacher('student', { key }).then((r) => {
+      if (mode !== 'teacher' || T.detail !== key) return;
+      if (!r || !r.ok) { if (!teacherFail(r)) { T.detailData = { error: (r && r.error) || '불러오지 못했어요.' }; drawStudent(); } return; }
+      T.detailData = r; drawStudent();
+    }).catch(() => { if (T.detail === key) { T.detailData = { error: '서버에 연결하지 못했어요. 잠시 뒤에 새로고침을 눌러 주세요.' }; drawStudent(); } });
+  }
+  const dayLabel = (ms) => { const d = new Date(ms); return `${d.getMonth() + 1}월 ${d.getDate()}일`; };
+  function drawStudent() {
+    const box = $('#tStatusBody'); if (!box || !T.detail) return;
+    const chips = $('#tClassChips'); if (chips) chips.hidden = true; // 자세히 보는 동안은 반 고르기 줄 숨김
+    const key = T.detail, d = T.detailData, s0 = (T.students || []).find((x) => x.key === key) || (d && d.student) || {};
+    let html = `<div class="sdhead"><button class="btn small" id="sdBack">← 반 현황</button><h3><span class="dot${s0.online ? ' on' : ''}"></span>6학년 ${T.cls}반 ${esc(s0.num || '')}번 ${esc(s0.name || '')}</h3><button class="btn small" id="sdReload">새로고침</button></div>`;
+    if (!d) html += '<div class="empty">불러오는 중…</div>';
+    else if (d.error) html += `<div class="empty">${esc(d.error)}</div>`;
+    else {
+      const s = d.student, units = s.units || [], um = {};
+      units.forEach((u) => { um[u.id] = u; });
+      html += `<div class="tsum"><span>오늘 점수 <b>${s.today ? fmt(s.today) : '-'}</b></span><span>총 메달 <b>${s.medals}</b>/${QUESTS.length}</span><span>졸업 <b>${s.grads ? s.grads + '회' : '-'}</b></span><span>정답률 <b>${s.solved ? Math.round(s.acc * 100) + '%' : '-'}</b></span><span>푼 문제 <b>${fmt(s.solved)}</b></span><span>남은 오답 <b>${s.wrongLeft}</b></span></div>`;
+      html += '<h3 class="th3">단원별 정답률</h3>';
+      if (!units.length) html += '<div class="empty">이 학생이 새 버전에서 문제를 풀면 단원별 정답률이 보여요.</div>';
+      else {
+        const weak = units.filter((u) => u.a >= 5 && u.c / u.a < 0.7).sort((a, b) => a.c / a.a - b.c / b.a).slice(0, 3).map((u) => u.id); // 5문제 넘게 풀고 70% 아래인 단원 중 낮은 3개
+        html += '<div class="units">' + ['국어', '수학', '사회'].map((sj) => `<div class="usub"><h4>${sj}</h4>${QUESTS.filter((q) => q.subj === sj).map((q) => {
+          const u = um[q.pool], p = u && u.a ? Math.round((u.c / u.a) * 100) : null, lv = p == null ? 'none' : p >= 80 ? 'hi' : p >= 60 ? 'mid' : 'lo';
+          return `<div class="urow ${lv}"><span class="un">${esc(q.unit.replace(/^(국어|수학|사회)\s*/, ''))} ${esc(q.title)}${weak.includes(q.pool) ? ' <em>약함</em>' : ''}</span><div class="bar"><i style="width:${p || 0}%"></i></div><span class="uv">${p == null ? '안 풀었어요' : `${p}% <small>${u.c}/${u.a}</small>`}</span></div>`;
+        }).join('')}</div>`).join('') + '</div>';
+      }
+      html += '<h3 class="th3">자주 틀린 문제</h3>';
+      html += d.wrong && d.wrong.length ? `<ol class="wlist">${d.wrong.map((w) => `<li><span class="pill">${esc(w.quest)}</span><p>${esc(w.text)}</p><small>${w.n}번 틀림${w.last ? ' · 마지막 ' + dayLabel(w.last) : ''}</small></li>`).join('')}</ol>` : '<div class="empty">퀘스트·졸업 시험에서 틀린 문제가 아직 없어요.</div>';
+      html += '<p class="rnote">단원별 정답률은 학생이 푼 모든 문제(보물상자·오답 다시 풀기 포함), 자주 틀린 문제는 시트 \'오답\' 탭(퀘스트·졸업 시험)에서 가져와요.</p>';
+    }
+    box.innerHTML = html;
+    $('#sdBack').addEventListener('click', () => { T.detail = null; T.detailData = null; drawStatus(); });
+    $('#sdReload').addEventListener('click', () => { T.detailData = null; drawStudent(); loadStudent(key); });
+  }
+  // 이 기기에 저장된 학생 기록(저장 공간이 가득 찼을 때 선생님이 정리)
+  function localSaves() {
+    const list = []; let total = 0;
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i); if (!k || !k.startsWith(KEY)) continue;
+        const v = localStorage.getItem(k) || ''; total += (k.length + v.length) * 2;
+        if (!k.startsWith(KEY + ':p:')) continue;
+        let s = null; try { s = JSON.parse(v); } catch (e) { s = null; }
+        list.push({ key: k.slice((KEY + ':p:').length), name: (s && s.name) || '?', cls: (s && s.cls) || 0, num: (s && s.num) || 0, medals: s && s.badges ? Object.keys(s.badges).length : 0, updated: (s && s.updated) || 0, size: (k.length + v.length) * 2 });
+      }
+    } catch (e) { /* 무시 */ }
+    list.sort((a, b) => a.cls - b.cls || a.num - b.num);
+    return { list, total };
+  }
+  function drawDevice() {
+    const box = $('#tDevice'); if (!box) return;
+    const { list, total } = localSaves(), kb = (n) => (n < 10240 ? (n / 1024).toFixed(1) : Math.round(n / 1024)) + 'KB';
+    box.innerHTML = `<div class="tsum"><span>이 기기에 저장된 학생 <b>${list.length}</b>명</span><span>게임 기록 크기 <b>${kb(total)}</b></span><span class="rnote">브라우저마다 보통 5MB쯤 저장할 수 있어요</span></div>`
+      + (list.length ? `<div class="twrap"><table class="rank tstat"><thead><tr><th>반</th><th>번호</th><th>이름</th><th>메달</th><th>마지막으로 한 때</th><th>크기</th><th></th></tr></thead><tbody>${list.map((x) => `<tr><td>${esc(x.cls)}반</td><td>${esc(x.num)}번</td><td class="nm">${esc(x.name)}</td><td>${x.medals}개</td><td>${x.updated ? ago(x.updated) : '-'}</td><td>${kb(x.size)}</td><td><button class="btn small ghost danger" data-ldel="${esc(x.key)}" data-who="${esc(x.cls + '반 ' + x.num + '번 ' + x.name)}">지우기</button></td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">이 기기에 저장된 학생 기록이 없어요.</div>')
+      + '<p class="rnote">여기서 지우는 것은 이 기기(브라우저)에만 있는 진행 상황(메달·코인·펫·오답 노트)이에요. 구글 시트의 기록과 랭킹은 그대로예요. 학생 화면에 "저장 공간이 가득 찼어요"가 나오면 오래된 기록부터 지워 주세요.</p>';
+    box.querySelectorAll('[data-ldel]').forEach((b) => b.addEventListener('click', () => {
+      const key = b.dataset.ldel, who = b.dataset.who;
+      confirmBox('이 기기의 기록을 지울까요?', `<b>6학년 ${esc(who)}</b> 학생이 이 기기에 저장한 메달·코인·펫·오답 노트를 지워요. 구글 시트의 기록과 랭킹은 그대로예요.<br><small style="color:var(--ink-soft)">이 학생이 이 기기에서 다시 시작하면 메달 0개부터 해요.</small>`, '지우기', () => {
+        LS.del(KEY + ':p:' + key); LS.del(activeKey(key));
+        LS.set(KEY + ':players', (LS.get(KEY + ':players') || []).filter((p) => p.key !== key));
+        lsWarned = false; toast('이 기기의 기록을 지웠어요.', 'good'); openTeacher();
+      }, () => openTeacher());
+    }));
   }
   function deleteStudent(key, who) {
     const cls = T.cls;
@@ -3678,7 +4054,7 @@ window.PETS_ART = (function () {
     }, () => openTeacher());
   }
   function exitTeacher() {
-    clearInterval(T.timer); T.pin = ''; T.students = null; T.draft = ''; T.busy = false;
+    clearInterval(T.timer); T.pin = ''; T.students = null; T.draft = ''; T.busy = false; T.detail = null; T.detailData = null;
     ui.modal = null; $('#modal').hidden = true; $('#sheet').innerHTML = ''; $('#sheet').classList.remove('wide');
     st = null; mode = 'title'; toTitle();
   }
@@ -3691,9 +4067,10 @@ window.PETS_ART = (function () {
   function setErr(html) { $('#tErr').innerHTML = html || ''; ['#inCls', '#inNum', '#inName'].forEach((x) => $(x).classList.remove('bad')); }
   function fail(sel, msg) { setErr(msg); $(sel).classList.add('bad'); try { $(sel).focus(); } catch (e) { /* 무시 */ } return false; }
   function toTitle() {
-    if (st && mode === 'play') save();
+    if (st && mode === 'play') { save(); releaseTab(); }
     Poll.stop();
     mode = 'title'; ui.near = null;
+    $('#tabLock').hidden = true; tabLocked = false;
     ['#hud', '#toolbar', '#minimap', '#questTrack', '#joy', '#actBtn', '#prompt', '#dialog'].forEach((x) => { $(x).hidden = true; });
     $('#title').hidden = false;
     draftLook = randomLook(); draftTouched = false;
@@ -3706,6 +4083,7 @@ window.PETS_ART = (function () {
   }
   function startGame() {
     Snd.init();
+    if (whoBusy) return false;
     const clsRaw = $('#inCls').value.trim(), numRaw = $('#inNum').value.trim();
     const name = $('#inName').value.trim().replace(/[<>"'&]/g, '').replace(/\s+/g, ' ');
     if (!clsRaw) return fail('#inCls', '반을 써 주세요.');
@@ -3722,9 +4100,30 @@ window.PETS_ART = (function () {
       return false;
     }
     if (old) { keepLook(old); begin(old); toast(`${esc(name)}의 기록을 이어서 해요!`, 'good'); return true; }
+    // 이 기기에서 처음 시작: 시트에 같은 반·번호가 다른 이름으로 있으면 한 번 더 확인(다른 기기에서 번호를 잘못 썼을 때)
+    if (API.on()) {
+      whoBusy = true; $('#startBtn').disabled = true; setErr('<span class="rnote">반·번호를 확인하는 중…</span>');
+      const wait = new Promise((r) => setTimeout(() => r(null), 5000)); // 서버가 느리면 5초 뒤 그냥 시작
+      Promise.race([API.who(cls, num).catch(() => null), wait]).then((r) => {
+        whoBusy = false; $('#startBtn').disabled = false;
+        if (mode !== 'title' || ui.modal) return;
+        const other = r && r.ok && r.name ? String(r.name) : '';
+        const go = () => { setErr(''); begin(newState(name, cls, num, draftLook)); };
+        if (other && norm(other) !== norm(name)) {
+          setErr(`<div class="tconfirm">6학년 ${cls}반 ${num}번은 이미 <b>${esc(other)}</b> 이름으로 기록이 있어요. 번호를 잘못 쓰지 않았는지 확인해 주세요.<div class="tcbtns"><button class="btn small ghost" id="tcNo">번호 다시 쓰기</button><button class="btn small primary" id="tcYes">내 번호가 맞아요</button></div></div>`);
+          $('#tcNo').addEventListener('click', () => { setErr(''); $('#inNum').focus(); $('#inNum').select(); });
+          $('#tcYes').addEventListener('click', go);
+          return;
+        }
+        go();
+        if (other) setTimeout(() => toast('이 기기에서는 처음이에요. 다른 기기에서 모은 메달·코인은 그 기기에 남아 있어요.'), 900);
+      });
+      return false;
+    }
     begin(newState(name, cls, num, draftLook));
     return true;
   }
+  let whoBusy = false;
   $('#startBtn').addEventListener('click', startGame);
   ['#inCls', '#inNum', '#inName'].forEach((x) => $(x).addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); startGame(); } }));
   ['#inCls', '#inNum'].forEach((x) => $(x).addEventListener('input', (e) => { const v = e.target.value.replace(/[^0-9]/g, '').slice(0, 2); if (v !== e.target.value) e.target.value = v; }));
@@ -3746,6 +4145,7 @@ window.PETS_ART = (function () {
     if (!mmBase) mmBase = buildMiniBase(mm.width / W);
     cam.x = player.x - vw / cam.z / 2; cam.y = player.y - vh / cam.z / 2;
     loadGlyphs(st.name + Object.values(st.petNames || {}).join(''));
+    tabLocked = false; claimTab(); // 이 창이 이 학생 기록을 맡음(먼저 열린 창은 멈춤)
     save(); refreshHud();
     API.send('login');
     Poll.start();
@@ -3813,7 +4213,7 @@ window.PETS_ART = (function () {
   else boot((hot && hot.data) || {});
   // 시험용 창구: 주소 끝에 ?debug=1 을 붙였을 때만 열려요
   let dbg = false; try { dbg = /[?&]debug=1\b/.test(location.search); } catch (e) { /* 무시 */ }
-  if (dbg) window.__game = { todayOf, dayKST, drawChar, portrait, SKIN, HAIR, SHIRT, PANTS, Upd, Poll, T, API, enterTeacher, openTeacherLogin, openTeacher, accountReset, showNotices, render, update, drawGround, pet, PETS, scoreOf, buildRanks, localRanks, renamePet, startGame, canvasText, st: () => st, player, QUESTS, POOLS, interact, things, walkTo, openQuests, openWrong, openMap, openRank, openSettings, openShop, startQuest, Quiz, cam, toTitle, begin, solid, gi, W, H, TS, objs };
+  if (dbg) window.__game = { weakUnits, startWeak, goalsToday, checkGoals, openGoals, today, openCert, lockTab, flush, save, localSaves, GOALS, TAB_ID, ownsTab, tabLocked: () => tabLocked, mode: () => mode, todayOf, dayKST, drawChar, portrait, SKIN, HAIR, SHIRT, PANTS, Upd, Poll, T, API, enterTeacher, openTeacherLogin, openTeacher, accountReset, showNotices, render, update, drawGround, pet, PETS, scoreOf, buildRanks, localRanks, renamePet, startGame, canvasText, st: () => st, player, QUESTS, POOLS, interact, things, walkTo, openQuests, openWrong, openMap, openRank, openSettings, openShop, startQuest, Quiz, cam, toTitle, begin, solid, gi, W, H, TS, objs };
 })();
 </script>
 </body>
