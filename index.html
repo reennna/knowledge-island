@@ -1595,7 +1595,8 @@ window.PETS_ART = (function () {
       const wool = [[-7, -9.4, 5], [-2, -12.2, 5.4], [3.6, -11.4, 5], [6.4, -8, 4.2], [1.6, -6.6, 5], [-4.6, -6, 4.6], [-9.2, -6.6, 3.6]];
       const P = () => { g.beginPath(); for (const [x, y, r] of wool) { g.moveTo(x + r, y); g.arc(x, y, r, 0, TAU); } };
       P(); g.lineWidth = 2.6; g.strokeStyle = OUT; g.stroke(); P(); fillOnly(g, '#fbfbf4');
-      g.save(); P(); g.clip(); g.fillStyle = '#e6e3d6'; g.fillRect(-14, -16, 30, 20); // 아래 오른쪽 그늘: 어둡게 칠한 뒤 위 왼쪽으로 옮긴 털 모양을 다시 칠함 g.beginPath(); for (const [x, y, r] of wool) { g.moveTo(x - 1.6 + r, y - 1.8); g.arc(x - 1.6, y - 1.8, r, 0, TAU); } g.fillStyle = '#fbfbf4'; g.fill(); g.restore();
+      // 아래 오른쪽 그늘: 어둡게 칠한 뒤 위 왼쪽으로 옮긴 털 모양을 다시 칠함(설명은 꼭 코드 위 줄에: 줄 중간 // 는 뒤 코드를 지움)
+      g.save(); P(); g.clip(); g.fillStyle = '#e6e3d6'; g.fillRect(-14, -16, 30, 20); g.beginPath(); for (const [x, y, r] of wool) { g.moveTo(x - 1.6 + r, y - 1.8); g.arc(x - 1.6, y - 1.8, r, 0, TAU); } g.fillStyle = '#fbfbf4'; g.fill(); g.restore();
       for (const [x, y] of [[-3, -11], [2.4, -9.6], [-6, -7.6]]) { g.beginPath(); g.arc(x, y, 1.6, 0.2, Math.PI - 0.2); g.lineWidth = 0.8; g.strokeStyle = '#d4d0c2'; g.stroke(); }
       gloss(g, -3.4, -14.4, 1.8, 0.9);
       g.save(); g.translate(8.6, -10 + graze); g.rotate(graze * 0.09);
@@ -4329,7 +4330,35 @@ window.PETS_ART = (function () {
     ctx.fillStyle = kind === 'done' ? '#fff' : OUT; ctx.font = '15px Jua, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(kind === 'done' ? '✓' : '!', x, y - 9.5);
   }
   function questOf(n) { return n.quest ? QMAP[n.quest] : null; }
+  // 정렬된 목록의 물건 하나를 그림(render가 물건마다 그리기 기준을 맞춰서 부름)
+  function drawItem(it, t, z, camX, camY, fitOk) {
+    if (it.o) {
+      const o = it.o;
+      if (o.k === 'tree') {
+        const bx = o.x * TS + TS / 2 + (o.ox || 0), by = o.y * TS + TS - 2 + (o.oy || 0); // 칸 가운데에서 조금 벗어난 발치
+        if (fitOk) { const f = fitTree(o, z); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(f.c, Math.round((bx - f.dx) * z) - camX, Math.round((by - f.dy) * z) - camY); ctx.setTransform(z, 0, 0, z, -cam.x * z, -cam.y * z); }
+        else { const s = sprTree(o.kind, o.flip, o.tilt, treeVar(o)), q = trimmed(s), k = o.s || 1; ctx.drawImage(q.c, bx - (s.w / 2 - q.x) * k, by - (s.h - 6 - q.y) * k, q.w * k, q.h * k); } // 확대·축소 직후에는 잠깐 늘려서 그림
+        return;
+      }
+      if (o.k === 'gate') o.state = st && badgeCount() >= QUESTS.length ? 'open' : '';
+      if (o.k === 'chest') o.state = st && st.chests[o.chest] ? 'open' : '';
+      const s = sprBuilding(o); ctx.drawImage(s.c, o.x * TS - (o.pad || 0), o.y * TS - o.ex, s.w, s.h);
+      if (o.k === 'volcano') drawLavaFlow(o, t);
+      if (o.k === 'fountain') drawFountainFx(o, t);
+      if (o.k === 'waterfall') drawFall(o, t);
+    } else if (it.n) {
+      const n = it.n, x = (n.x + 0.5) * TS, y = (n.y + 0.8) * TS;
+      drawChar(ctx, x, y, n.look, n.dir, t + n.bob, false);
+    } else if (it.c) drawCritter(it.c, t);
+    else if (it.p) drawChar(ctx, player.x, player.y, st.look, player.dir, t, player.moving);
+    else if (it.pt) window.PETS_ART.draw(ctx, st.pet, pet.x, pet.y, pet.dir, t, pet.moving);
+    else if (it.fxp) drawPuff(it.fxp);
+  }
+  let itemErrs = 0; // 그림 하나에서 난 오류 수(처음 몇 번만 알림)
   function render(t) {
+    // 안전장치 ①: 화면 한 장마다 캔버스 상태(되돌리지 않은 save, 잘라내기, 투명도 등)를 깨끗이 비우고 시작.
+    // 창 크기를 바꿀 때와 같은 상태가 됨. 땅 그림이 화면을 다 덮으므로 보이는 것은 그대로(지원하지 않는 옛 브라우저는 건너뜀)
+    if (typeof ctx.reset === 'function') ctx.reset();
     const z = cam.z * dpr;
     cam.x = Math.round(cam.x * z) / z; cam.y = Math.round(cam.y * z) / z;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -4352,29 +4381,17 @@ window.PETS_ART = (function () {
     if (mode === 'play' && st.pet) list.push({ y: pet.y, pt: true });
     for (const p of fx) if (p.kind === 'smoke' || p.kind === 'puff') list.push({ y: p.sy != null ? p.sy : p.y + 200, fxp: p });
     list.sort((a, b) => a.y - b.y);
+    // 안전장치 ②: 물건을 하나 그리기 직전마다 그리기 기준(좌표·투명도·겹치기 방식)을 다시 맞추고, 그 물건이 바꾼 상태는 그린 뒤 되돌림.
+    // 그림 하나가 상태를 잘못 남겨도(2026-11-15 양 그림처럼) 뒤에 그리는 물건이 밀려나 사라지지 않음. 그림 하나에서 오류가 나면 그 물건만 건너뜀
+    // 글자 기준선은 예전 화면 그대로 '가운데'(마법사 모자 별 ★처럼 기준선을 정하지 않는 글자가 이 값을 따름. 예전에는 앞 화면 이름표에서 넘어온 값)
+    const toWorld = () => { ctx.setTransform(z, 0, 0, z, -cam.x * z, -cam.y * z); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.textBaseline = 'middle'; };
     for (const it of list) {
-      if (it.o) {
-        const o = it.o;
-        if (o.k === 'tree') {
-          const bx = o.x * TS + TS / 2 + (o.ox || 0), by = o.y * TS + TS - 2 + (o.oy || 0); // 칸 가운데에서 조금 벗어난 발치
-          if (fitOk) { const f = fitTree(o, z); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(f.c, Math.round((bx - f.dx) * z) - camX, Math.round((by - f.dy) * z) - camY); ctx.setTransform(z, 0, 0, z, -cam.x * z, -cam.y * z); }
-          else { const s = sprTree(o.kind, o.flip, o.tilt, treeVar(o)), q = trimmed(s), k = o.s || 1; ctx.drawImage(q.c, bx - (s.w / 2 - q.x) * k, by - (s.h - 6 - q.y) * k, q.w * k, q.h * k); } // 확대·축소 직후에는 잠깐 늘려서 그림
-          continue;
-        }
-        if (o.k === 'gate') o.state = st && badgeCount() >= QUESTS.length ? 'open' : '';
-        if (o.k === 'chest') o.state = st && st.chests[o.chest] ? 'open' : '';
-        const s = sprBuilding(o); ctx.drawImage(s.c, o.x * TS - (o.pad || 0), o.y * TS - o.ex, s.w, s.h);
-        if (o.k === 'volcano') drawLavaFlow(o, t);
-        if (o.k === 'fountain') drawFountainFx(o, t);
-        if (o.k === 'waterfall') drawFall(o, t);
-      } else if (it.n) {
-        const n = it.n, x = (n.x + 0.5) * TS, y = (n.y + 0.8) * TS;
-        drawChar(ctx, x, y, n.look, n.dir, t + n.bob, false);
-      } else if (it.c) drawCritter(it.c, t);
-      else if (it.p) drawChar(ctx, player.x, player.y, st.look, player.dir, t, player.moving);
-      else if (it.pt) window.PETS_ART.draw(ctx, st.pet, pet.x, pet.y, pet.dir, t, pet.moving);
-      else if (it.fxp) drawPuff(it.fxp);
+      toWorld(); ctx.save();
+      try { drawItem(it, t, z, camX, camY, fitOk); }
+      catch (err) { if (itemErrs++ < 5) console.error('[지식의 섬] 그림 하나를 건너뜀(게임은 계속돼요)', err); }
+      ctx.restore();
     }
+    toWorld();
     // 이름표·표시
     for (const n of npcs) {
       const x = (n.x + 0.5) * TS, y = (n.y + 0.8) * TS;
@@ -4392,7 +4409,7 @@ window.PETS_ART = (function () {
       drawGuide(t);
     }
     for (const p of fx) {
-      if (p.kind === 'text') { const a = Math.min(1, p.life * 2); ctx.globalAlpha = a; ctx.font = '18px Jua, sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 4; ctx.strokeStyle = OUT; ctx.strokeText(p.text, p.x, p.y); ctx.fillStyle = p.color || '#ffc23d'; ctx.fillText(p.text, p.x, p.y); ctx.globalAlpha = 1; }
+      if (p.kind === 'text') { const a = Math.min(1, p.life * 2); ctx.globalAlpha = a; ctx.font = '18px Jua, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineWidth = 4; ctx.strokeStyle = OUT; ctx.strokeText(p.text, p.x, p.y); ctx.fillStyle = p.color || '#ffc23d'; ctx.fillText(p.text, p.x, p.y); ctx.globalAlpha = 1; }
       else if (p.kind === 'conf') { ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.life * 6); ctx.fillStyle = p.color; ctx.fillRect(-3, -2, 6, 4); ctx.restore(); }
     }
   }
@@ -5629,7 +5646,7 @@ window.PETS_ART = (function () {
   else boot((hot && hot.data) || {});
   // 시험용 창구: 주소 끝에 ?debug=1 을 붙였을 때만 열려요
   let dbg = false; try { dbg = /[?&]debug=1\b/.test(location.search); } catch (e) { /* 무시 */ }
-  if (dbg) window.__game = { weakUnits, startWeak, goalsToday, checkGoals, openGoals, today, openCert, lockTab, flush, save, localSaves, GOALS, TAB_ID, ownsTab, tabLocked: () => tabLocked, mode: () => mode, todayOf, dayKST, drawChar, portrait, SKIN, HAIR, SHIRT, PANTS, Upd, Poll, T, API, enterTeacher, openTeacherLogin, openTeacher, accountReset, showNotices, render, update, drawGround, pet, PETS, scoreOf, buildRanks, localRanks, renamePet, startGame, canvasText, st: () => st, player, QUESTS, POOLS, interact, things, walkTo, openQuests, openWrong, openMap, openRank, openSettings, openShop, startQuest, Quiz, cam, toTitle, begin, solid, gi, W, H, TS, objs, BDRAW, VOLC, sprTree, lavaReset: () => { lavaLines = null; }, ground, G, desert, chunks, bakeChunk, terr: () => terr, terrInit, paintTerrain };
+  if (dbg) window.__game = { weakUnits, startWeak, goalsToday, checkGoals, openGoals, today, openCert, lockTab, flush, save, localSaves, GOALS, TAB_ID, ownsTab, tabLocked: () => tabLocked, mode: () => mode, todayOf, dayKST, drawChar, portrait, SKIN, HAIR, SHIRT, PANTS, Upd, Poll, T, API, enterTeacher, openTeacherLogin, openTeacher, accountReset, showNotices, render, update, drawGround, pet, PETS, scoreOf, buildRanks, localRanks, renamePet, startGame, canvasText, st: () => st, player, QUESTS, POOLS, interact, things, walkTo, openQuests, openWrong, openMap, openRank, openSettings, openShop, startQuest, Quiz, cam, toTitle, begin, solid, gi, W, H, TS, objs, BDRAW, VOLC, sprTree, lavaReset: () => { lavaLines = null; }, ground, G, desert, chunks, bakeChunk, terr: () => terr, terrInit, paintTerrain, critters, fx, npcs, drawItem, drawCritter, CRITTER_ART, drawPuff, drawFall, drawFountainFx, drawLavaFlow, nameTag, marker, sprBuilding, ctx };
 })();
 </script>
 </body>
